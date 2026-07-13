@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>灵动 AI · 桌面宠物</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --green: #34C759;
+    --green-light: #E8F5E9;
+    --text: #1D1D1F;
+    --text-secondary: #6E6E73;
+    --border: #E5E5E5;
+  }
+
+  body {
+    font-family: var(--font);
+    background: #E8E8ED;
+    display: flex; justify-content: center; align-items: center;
+    gap: 24px;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .pet-card {
+    width: 200px;
+    background: #FFFFFF;
+    border-radius: 24px;
+    box-shadow: 
+      0 2px 20px rgba(0,0,0,0.06),
+      0 0.5px 0 rgba(0,0,0,0.05);
+    padding: 28px 20px 20px 20px;
+    display: flex; flex-direction: column; align-items: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .pet-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 4px 30px rgba(0,0,0,0.08),
+      0 0.5px 0 rgba(0,0,0,0.05);
+  }
+
+  .pet-body-wrap {
+    position: relative;
+    width: 72px; height: 72px;
+    margin-bottom: 16px;
+  }
+
+  .pet-body {
+    width: 68px; height: 68px;
+    background: var(--green);
+    border-radius: 50%;
+    position: absolute;
+    left: 2px; top: 2px;
+    box-shadow: 0 4px 16px rgba(52,199,89,0.25);
+  }
+
+  .pet-highlight {
+    width: 52px; height: 52px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 50%;
+    position: absolute;
+    left: 8px; top: 8px;
+  }
+
+  .pet-eye-left, .pet-eye-right {
+    position: absolute;
+    width: 14px; height: 17px;
+    background: white;
+    border-radius: 50%;
+    top: 24px;
+    z-index: 2;
+  }
+
+  .pet-eye-left { left: 15px; }
+  .pet-eye-right { left: 37px; }
+
+  .pet-pupil {
+    position: absolute;
+    width: 6px; height: 8px;
+    background: #1D1D1F;
+    border-radius: 50%;
+    top: 4px; left: 5px;
+    animation: look 5s ease-in-out infinite;
+  }
+
+  @keyframes look {
+    0%, 47%, 53%, 100% { transform: translate(0,0); }
+    49% { transform: translate(1.5px,0); }
+    51% { transform: translate(-1.5px,0); }
+  }
+
+  .pet-blinker {
+    position: absolute;
+    width: 14px; height: 2px;
+    background: var(--green);
+    border-radius: 1px;
+    top: 26px; z-index: 3;
+    animation: blink 4s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 84%, 88%, 100% { transform: scaleY(0); }
+    86% { transform: scaleY(1); }
+  }
+
+  .blinker-left { left: 15px; }
+  .blinker-right { left: 37px; }
+
+  .pet-mouth {
+    position: absolute;
+    width: 10px; height: 5px;
+    border: 1.5px solid rgba(0,0,0,0.15);
+    border-top: none;
+    border-radius: 0 0 50% 50%;
+    top: 43px; left: 30px;
+  }
+
+  .pet-cheek-left, .pet-cheek-right {
+    position: absolute;
+    width: 10px; height: 6px;
+    background: rgba(255,150,150,0.2);
+    border-radius: 50%;
+    top: 38px;
+  }
+
+  .pet-cheek-left { left: 6px; }
+  .pet-cheek-right { left: 54px; }
+
+  .pet-name {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .pet-subtitle {
+    font-size: 11px; color: var(--green); font-weight: 500;
+    margin-bottom: 14px;
+    letter-spacing: 0.02em;
+  }
+
+  .pet-btn {
+    width: 100%;
+    padding: 8px 0;
+    background: var(--green-light);
+    border: none; border-radius: 10px;
+    font-size: 13px; font-weight: 500; font-family: inherit;
+    color: var(--green);
+    cursor: pointer;
+    margin-bottom: 6px;
+    transition: background 0.12s;
+  }
+
+  .pet-btn:hover { background: #D4EDD6; }
+
+  .pet-btn-secondary {
+    width: 100%;
+    padding: 8px 0;
+    background: transparent;
+    border: none; border-radius: 10px;
+    font-size: 12px; font-family: inherit;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+
+  .pet-btn-secondary:hover { background: #F5F5F5; }
+
+  .panel {
+    width: 240px;
+    background: #FFFFFF;
+    border-radius: 20px;
+    box-shadow: 
+      0 2px 20px rgba(0,0,0,0.06),
+      0 0.5px 0 rgba(0,0,0,0.05);
+    overflow: hidden;
+  }
+
+  .panel-top {
+    padding: 18px 18px 10px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .panel-title {
+    font-size: 13px; font-weight: 700; color: var(--text);
+  }
+
+  .panel-count {
+    font-size: 11px; font-weight: 500;
+    background: var(--green-light); color: var(--green);
+    padding: 2px 8px; border-radius: 8px;
+  }
+
+  .panel-section {
+    padding: 10px 18px 4px 18px;
+    font-size: 10px; font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+  }
+
+  .todo-row {
+    margin: 1px 10px;
+    padding: 9px 8px;
+    border-radius: 8px;
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .todo-row:hover { background: #F9F9F9; }
+
+  .todo-circle {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid #D1D1D6;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .todo-circle.done {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .todo-label {
+    font-size: 12px; color: var(--text);
+  }
+
+  .todo-label.done {
+    color: var(--text-secondary);
+    text-decoration: line-through;
+  }
+
+  .notif-row {
+    margin: 1px 10px;
+    padding: 9px 8px;
+    border-radius: 8px;
+    display: flex; gap: 8px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .notif-row:hover { background: #F9F9F9; }
+
+  .notif-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--green); margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  .notif-dot.old { background: #D1D1D6; }
+
+  .notif-text { font-size: 12px; color: var(--text); line-height: 1.4; }
+  .notif-time { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+
+  .panel-divider {
+    height: 1px; background: var(--border);
+    margin: 4px 18px;
+  }
+</style>
+</head>
+<body>
+
+<div class="pet-card">
+  <div class="pet-body-wrap">
+    <div class="pet-body">
+      <div class="pet-highlight"></div>
+      <div class="pet-eye-left"><div class="pet-pupil"></div></div>
+      <div class="pet-eye-right"><div class="pet-pupil"></div></div>
+      <div class="pet-blinker blinker-left"></div>
+      <div class="pet-blinker blinker-right"></div>
+      <div class="pet-mouth"></div>
+      <div class="pet-cheek-left"></div>
+      <div class="pet-cheek-right"></div>
+    </div>
+  </div>
+
+  <div class="pet-name">小灵</div>
+  <div class="pet-subtitle">在线 · 等你指令</div>
+
+  <button class="pet-btn">新待办</button>
+  <button class="pet-btn-secondary">打开对话</button>
+  <button class="pet-btn-secondary">宠物设置</button>
+</div>
+
+<div class="panel">
+  <div class="panel-top">
+    <span class="panel-title">今日</span>
+    <span class="panel-count">2 项</span>
+  </div>
+
+  <div class="panel-section">待办</div>
+
+  <div class="todo-row">
+    <div class="todo-circle done"></div>
+    <span class="todo-label done">API 网关重构方案评审</span>
+  </div>
+
+  <div class="todo-row">
+    <div class="todo-circle"></div>
+    <span class="todo-label">用户中心 v2 数据迁移确认</span>
+  </div>
+
+  <div class="todo-row">
+    <div class="todo-circle"></div>
+    <span class="todo-label">Q2 技术分享 PPT 初稿</span>
+  </div>
+
+  <div class="panel-divider"></div>
+
+  <div class="panel-section">Agent 动态</div>
+
+  <div class="notif-row">
+    <div class="notif-dot"></div>
+    <div>
+      <div class="notif-text">项目管理生成项目周报</div>
+      <div class="notif-time">2 分钟前</div>
+    </div>
+  </div>
+
+  <div class="notif-row">
+    <div class="notif-dot old"></div>
+    <div>
+      <div class="notif-text">邮件助手发送周报至团队</div>
+      <div class="notif-time">1 分钟前</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

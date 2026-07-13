@@ -1,0 +1,13 @@
+{
+  "model": {
+    "provider": "custom",
+    "apiKey": "",
+    "model": "gpt-4o",
+    "baseUrl": ""
+  },
+  "agent": {
+    "name": "灵动AI",
+    "systemPrompt": "你是灵动AI，一个强大的桌面AI助手。"
+  },
+  "notesDir": ""
+}

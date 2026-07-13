@@ -1,0 +1,119 @@
+{
+  "name": "lobster-desktop",
+  "version": "1.3.9",
+  "description": "灵动AI - AI 桌面办公助手",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64"
+  },
+  "keywords": [],
+  "author": "灵动科技",
+  "license": "ISC",
+  "type": "commonjs",
+  "build": {
+    "appId": "com.lingdong.desktop",
+    "productName": "灵动AI+桌面宠物",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "pet-manager.js",
+      "pet-window.html",
+      "pet-settings.html",
+      "todo-panel.html",
+      "tray-icon.png",
+      "pet-icon.png",
+      "voice-browser.html",
+      "voice-recorder.html",
+      "docx-generator.js",
+      "planner.js",
+      "web-search.js",
+      "security-auditor.js",
+      "executor.js",
+      "obfuscate.js",
+      "obfuscator-config.js",
+      "ahk-runner.js",
+      "public/**/*",
+      "whisper/**/*",
+      "libs/**/*",
+      "package.json",
+      "node_modules/**/*",
+      "!node_modules/.cache/**/*",
+      "!node_modules/.bin/**/*",
+      "!node_modules/electron/**/*",
+      "!node_modules/electron-builder/**/*",
+      "!node_modules/electron-builder-lib/**/*",
+      "!node_modules/app-builder-bin/**/*",
+      "!node_modules/app-builder-lib/**/*",
+      "!node_modules/typescript/**/*",
+      "!node_modules/ts-node/**/*",
+      "!node_modules/node-gyp/**/*",
+      "!node_modules/7zip-bin/**/*",
+      "!node_modules/@types/**/*",
+      "!node_modules/asar/**/*",
+      "!node_modules/playwright/node_modules/**/*",
+      "!node_modules/playwright-core/node_modules/**/*",
+      "!**/test/**/*",
+      "!**/tests/**/*",
+      "!**/*.test.js",
+      "!**/*.spec.js",
+      "!**/*.map",
+      "!**/README*",
+      "!**/CHANGELOG*",
+      "!**/*.pyc",
+      "!**/__pycache__/**/*",
+      "!data/Cache/**/*",
+      "!data/Code Cache/**/*",
+      "!data/DawnCache/**/*",
+      "!data/GPUCache/**/*",
+      "!data/ShaderCache/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "灵动AI+桌面宠物",
+      "uninstallDisplayName": "灵动AI+桌面宠物",
+      "artifactName": "灵动AI+桌面宠物-v${version}.exe"
+    },
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/canvas/**/*",
+      "node_modules/@napi-rs/**/*"
+    ],
+    "compression": "normal"
+  },
+  "devDependencies": {
+    "asar": "^3.2.0",
+    "electron": "^41.3.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "canvas": "^3.2.3",
+    "docx": "^9.6.1",
+    "highlight.js": "^11.11.1",
+    "mammoth": "^1.12.0",
+    "marked": "^18.0.5",
+    "pdfjs-dist": "^5.7.284",
+    "playwright": "^1.60.0",
+    "pptxgenjs": "^4.0.1"
+  }
+}

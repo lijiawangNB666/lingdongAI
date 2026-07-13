@@ -1,0 +1,74 @@
+classDiagram
+    class MainProcess {
+        +mainWindow: BrowserWindow
+        +petManager: PetManager
+        +ALL_TOOLS: Array
+        +_globalAbortController: AbortController
+        +executeTool(name, args, signal): Object
+        +executeToolSmart(name, args, signal): Object
+        +confirmDangerousInline(operation, details): Promise~boolean~
+        +safeIpcHandle(channel, handler): void
+        +ensureConfig(): void
+        +ensureDirectories(): void
+        +loadSessions(): Array
+        +saveSessions(sessions): void
+    }
+
+    class RendererProcess {
+        +conversationHistory: Array
+        +currentSessionId: string
+        +_currentSessionId: string
+        +sessions: Array
+        +currentAgent: Object
+        +sendMessage(): void
+        +saveCurrentSession(): void
+        +shouldUsePlanner(text): boolean
+        +loadSessions(): void
+        +handleAIStream(data): void
+    }
+
+    class PetManager {
+        +petWindow: BrowserWindow
+        +settings: Object
+        +currentBackend: string
+        +todoData: Array
+        +_ipcRegistered: boolean
+        +_recentlyCreatedTodos: Map
+        +chatWithAI(message, context, agentConfig): string
+        +loadSettings(): Object
+        +saveSettings(settings): boolean
+        +_registerIPC(): void
+        +loadTodos(): Array
+        +saveTodos(todos): void
+    }
+
+    class Planner {
+        +PLANNER_SYSTEM_PROMPT: string
+        +generatePlan(request, tools, config, signal): Object
+        +createSimplePlan(userRequest): Object
+        +executePlan(plan, executeFn, onProgress, signal): Object
+    }
+
+    class Executor {
+        +TOOL_SCHEMAS: Object
+        +validateToolArgs(toolName, args): Object
+        +verifyToolResult(toolName, args, result): Object
+        +executeToolCallsParallel(toolCalls, executeFn, progressFn, signal, options): Array
+    }
+
+    class PreloadBridge {
+        +callAIWithTools(messages, config, agentId): Promise
+        +callAIWithPlan(messages, config, agentId): Promise
+        +saveSession(session): Promise
+        +getSessions(): Promise
+        +onAIStream(callback): void
+        +takeScreenshot(): Promise
+    }
+
+    MainProcess --> PetManager : 创建并持有
+    MainProcess --> Planner : require
+    MainProcess --> Executor : require
+    RendererProcess --> PreloadBridge : window.electronAPI
+    PreloadBridge --> MainProcess : IPC桥接
+    PetManager --> PreloadBridge : 无（直接用ipcMain）
+    Planner ..> Executor : 不直接依赖

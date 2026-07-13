@@ -1,0 +1,48 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>测试宠物窗口</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, html { 
+      width: 100%; 
+      height: 100%; 
+      background: transparent; 
+      -webkit-app-region: drag; /* 关键！全屏可拖拽 */
+      font-family: sans-serif;
+    }
+    
+    .test-window {
+      width: 100%;
+      height: 100%;
+      background: rgba(76, 175, 80, 0.95);
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 20px;
+    }
+    
+    .title {
+      font-size: 24px;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    
+    .subtitle {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-window">
+    <div class="title">🐾 测试窗口</div>
+    <div class="subtitle">按住任意位置拖动！</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,47 @@
+sequenceDiagram
+    participant U as 用户
+    participant R as renderer.js
+    participant P as preload.js
+    participant M as main.js
+    participant PL as planner.js
+    participant AI as LLM API
+
+    Note over U,M: P0-01 工具调用链路（BUG版）
+    U->>R: 输入"帮我创建文件"
+    R->>R: shouldUsePlanner() → true
+    R->>P: callAIWithPlan(messages, config, agentId)
+    P->>M: call-ai-with-plan IPC
+    M->>PL: generatePlan(userRequest, tools, config)
+    PL->>AI: 请求生成计划
+    AI-->>PL: 计划JSON
+    PL-->>M: plan (如果LLM失败→createSimplePlan)
+    Note over PL: createSimplePlan BUG: stepTool计算但未使用<br/>返回 tool:'' 空步骤
+    M->>M: hasToolSteps = false → 跳过Phase2
+    M->>M: Phase3 内联工具迭代
+    M->>AI: 带工具的最终请求
+    AI-->>M: 可能返回纯文本（无tool_calls）
+    M-->>R: success:true, 但无工具执行
+    R->>U: AI只回复文字，未执行任何操作
+
+    Note over U,M: P0-01 修复后
+    U->>R: 输入"帮我创建文件"
+    R->>P: callAIWithPlan(messages, config, agentId)
+    P->>M: call-ai-with-plan IPC
+    M->>PL: generatePlan()
+    PL->>PL: createSimplePlan() → stepTool='file_write'
+    PL-->>M: plan with tool:'file_write'
+    M->>M: hasToolSteps = true → 执行Phase2
+    M->>M: executeToolSmart('file_write', args)
+    M-->>R: 工具执行结果
+    R->>U: 文件已创建 ✓
+
+    Note over U,M: P0-06 会话保存链路
+    R->>R: saveCurrentSession()
+    R->>P: saveSession(session)
+    P->>M: save-session IPC
+    M->>M: loadSessions() → 读取sessions.json
+    M->>M: sessions[idx] = session / sessions.unshift(session)
+    M->>M: saveSessions(sessions) → 写入sessions.json
+    M-->>R: {success: true}
+
+    Note over R: BUG: _currentSessionId vs currentSessionId<br/>两个变量可能不同步

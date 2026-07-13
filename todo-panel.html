@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>待办面板</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  background: #F5F5F8;
+  color: #333;
+  overflow: hidden;
+  user-select: none;
+}
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,30); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ===== 标题栏 ===== */
+.titlebar {
+  height: 36px; display: flex; align-items: center; padding: 0 14px;
+  background: rgba(0,0,0,3); border-bottom: 1px solid rgba(0,0,0,8);
+  -webkit-app-region: drag;
+}
+.titlebar h3 { font-size: 13px; font-weight: 600; color: #666; flex: 1; }
+.titlebar-btns { display: flex; gap: 4px; -webkit-app-region: no-drag; }
+.titlebar-btns button {
+  width: 28px; height: 24px; border: none; background: transparent;
+  color: #999; font-size: 14px; cursor: pointer; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+}
+.titlebar-btns button:hover { background: rgba(0,0,0,8); color: #333; }
+
+/* ===== 主布局 ===== */
+.main { display: flex; height: calc(100vh - 36px); }
+.left-panel { flex: 1; display: flex; flex-direction: column; border-right: 1px solid rgba(0,0,0,8); min-width: 0; }
+.right-panel { width: 340px; display: flex; flex-direction: column; flex-shrink: 0; }
+
+/* ===== 待办面板左侧 ===== */
+.todo-header { padding: 10px 12px 6px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.todo-filters { display: flex; gap: 6px; }
+.todo-filters input {
+  flex: 1; padding: 7px 10px; border: 1px solid #E0E0E0; border-radius: 8px;
+  font-size: 12px; outline: none; background: #FFF;
+}
+.todo-filters input:focus { border-color: #4CAF50; }
+.todo-filters select {
+  padding: 5px 8px; border: 1px solid #E0E0E0; border-radius: 6px;
+  font-size: 12px; background: #FFF; outline: none; cursor: pointer;
+}
+.todo-add { display: flex; gap: 6px; }
+.todo-add input {
+  flex: 1; padding: 8px 12px; border: 1px solid #E0E0E0; border-radius: 8px;
+  font-size: 13px; outline: none; background: #FFF;
+}
+.todo-add input:focus { border-color: #4CAF50; }
+.todo-add select {
+  width: 76px; padding: 5px 4px; border: 1px solid #E0E0E0; border-radius: 6px;
+  font-size: 12px; background: #FFF; outline: none; cursor: pointer;
+}
+.todo-add button {
+  padding: 7px 14px; border: none; border-radius: 8px;
+  background: #4CAF50; color: #FFF; font-size: 12px; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+}
+.todo-add button:hover { background: #43A047; }
+.sort-bar { display: flex; align-items: center; gap: 4px; }
+.sort-bar select {
+  padding: 2px 6px; border: 1px solid #E0E0E0; border-radius: 4px;
+  font-size: 11px; background: #FFF; outline: none; cursor: pointer;
+}
+/* 倒计时 */
+.todo-item .countdown {
+  font-size: 11px; font-weight: 700; margin-top: 3px; display: inline-flex;
+  align-items: center; gap: 3px; padding: 2px 8px; border-radius: 4px;
+}
+.countdown.urgent { color: #1a1a1a; background: rgba(244,67,54,0.15); }
+.countdown.soon { color: #1a1a1a; background: rgba(255,152,0,0.18); }
+.countdown.normal { color: #333; background: rgba(0,0,0,0.08); }
+.countdown.overdue { color: #FFF; background: #E53935; font-weight: 700; }
+.countdown.done-countdown { color: #999; background: rgba(0,0,0,0.05); text-decoration: line-through; }
+.todo-stats {
+  padding: 2px 12px 4px; font-size: 11px; color: #AAA;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.todo-stats button {
+  background: none; border: none; color: #BBB; font-size: 11px; cursor: pointer;
+}
+.todo-stats button:hover { color: #F44336; }
+
+/* 待办列表 */
+.todo-list { flex: 1; overflow-y: auto; padding: 4px 10px; }
+.todo-item {
+  display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px;
+  margin-bottom: 4px; border-radius: 8px; background: #FFF;
+  border: 1px solid rgba(0,0,0,8); transition: all 0.15s;
+}
+.todo-item:hover { background: #F0F7F0; border-color: rgba(76,175,80,30); }
+.todo-item.done { background: rgba(0,0,0,2); border-color: rgba(0,0,0,4); }
+.todo-item .dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px;
+}
+.dot.green { background: #4CAF50; }
+.dot.orange { background: #FF9800; }
+.dot.blue { background: #2196F3; }
+.dot.red { background: #F44336; }
+.todo-item .cb {
+  width: 18px; height: 18px; border-radius: 50%; border: 2px solid #CCC;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  flex-shrink: 0; margin-top: 1px; transition: all 0.2s;
+}
+.todo-item .cb:hover { border-color: #4CAF50; }
+.todo-item.done .cb { background: #4CAF50; border-color: #4CAF50; }
+.todo-item.done .cb::after { content: '✓'; color: #FFF; font-size: 11px; font-weight: 700; }
+.todo-item .content { flex: 1; min-width: 0; }
+.todo-item .text { font-size: 13px; color: #333; line-height: 1.5; word-break: break-word; }
+.todo-item.done .text { color: #BBB; text-decoration: line-through; }
+.todo-item.archived-item { opacity: 0.5; border-style: dashed; }
+.todo-item.archived-item .text::after { content: ' 📦'; font-size: 10px; }
+.todo-item .meta { font-size: 10px; color: #BBB; margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
+.todo-item .actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
+.todo-item:hover .actions { opacity: 1; }
+.todo-item .actions button {
+  width: 26px; height: 26px; border: none; background: transparent;
+  border-radius: 4px; cursor: pointer; font-size: 13px; color: #999;
+  display: flex; align-items: center; justify-content: center;
+}
+.todo-item .actions button:hover { background: rgba(0,0,0,8); color: #333; }
+.todo-item .actions button.del:hover { background: rgba(244,67,54,12); color: #F44336; }
+
+/* ===== 右侧面板 ===== */
+.right-card {
+  margin: 8px; padding: 12px 14px; background: #FFF;
+  border: 1px solid rgba(0,0,0,8); border-radius: 10px;
+}
+
+/* 时间天气卡 */
+.time-row { display: flex; justify-content: space-between; align-items: flex-start; }
+.time-box .clock { font-size: 38px; font-weight: 300; color: #1a1a2e; letter-spacing: 1px; }
+.time-box .date { font-size: 12px; color: #888; margin-top: 2px; }
+.time-box .lunar { font-size: 11px; color: #AAA; margin-top: 1px; }
+.weather-box { text-align: right; }
+.weather-box .temp { font-size: 26px; font-weight: 300; color: #1a1a2e; }
+.weather-box .desc { font-size: 12px; color: #888; }
+.weather-box .detail { font-size: 10px; color: #BBB; margin-top: 1px; }
+
+.forecast-row {
+  display: flex; justify-content: space-between; margin-top: 8px;
+  padding-top: 8px; border-top: 1px solid rgba(0,0,0,5);
+}
+.forecast-item { text-align: center; font-size: 10px; color: #999; flex: 1; }
+.forecast-item .f-icon { font-size: 16px; }
+.forecast-item .f-temp { color: #666; }
+
+.weather-alert {
+  margin-top: 6px; font-size: 11px; color: #E65100;
+  background: rgba(255,152,0,12); border-radius: 4px; padding: 3px 6px;
+}
+.forecast-toggle {
+  display: block; width: 100%; text-align: center;
+  background: none; border: none; font-size: 11px; color: #BBB;
+  cursor: pointer; margin-top: 4px; padding: 2px;
+}
+.forecast-toggle:hover { color: #666; }
+
+/* 日历 */
+.calendar-section { flex: 1; overflow-y: auto; }
+.cal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px 4px;
+}
+.cal-header .cal-title { font-size: 13px; font-weight: 600; color: #555; }
+.cal-header button {
+  background: none; border: none; color: #999; font-size: 16px;
+  cursor: pointer; padding: 2px 6px; border-radius: 4px;
+}
+.cal-header button:hover { background: rgba(0,0,0,6); color: #333; }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; padding: 0 8px; }
+.cal-day-name {
+  text-align: center; font-size: 10px; color: #BBB; font-weight: 600;
+  padding: 4px 0;
+}
+.cal-day {
+  text-align: center; padding: 4px 2px; font-size: 12px; color: #555;
+  border-radius: 6px; cursor: pointer; position: relative; min-height: 32px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.cal-day:hover { background: rgba(0,0,0,5); }
+.cal-day.today { background: rgba(76,175,80,12); color: #4CAF50; font-weight: 700; }
+.cal-day.selected { background: #4CAF50; color: #FFF; }
+.cal-day.other-month { color: #DDD; }
+.cal-day.weekend { color: #E57373; }
+.cal-day.weekend-sat { color: #42A5F5; }
+.cal-day .cal-count {
+  font-size: 8px; font-weight: 700; border-radius: 50%; width: 14px; height: 14px;
+  display: flex; align-items: center; justify-content: center;
+  position: absolute; bottom: 1px; right: 2px;
+}
+.cal-count.green { background: rgba(76,175,80,20); color: #4CAF50; }
+.cal-count.orange { background: rgba(255,152,0,20); color: #FF9800; }
+.cal-count.blue { background: rgba(33,150,243,20); color: #2196F3; }
+.cal-count.red { background: rgba(244,67,54,20); color: #F44336; }
+.cal-day .cal-holiday { font-size: 8px; color: #E57373; }
+
+/* 选中日期待办 */
+.date-todos { padding: 6px 12px; border-top: 1px solid rgba(0,0,0,5); }
+.date-todos .dt-title { font-size: 11px; font-weight: 600; color: #888; margin-bottom: 4px; }
+.date-todos .dt-item {
+  font-size: 12px; color: #555; padding: 2px 4px; display: flex;
+  align-items: center; gap: 6px;
+}
+.date-todos .dt-item .dt-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.dt-empty { font-size: 11px; color: #CCC; padding: 4px; text-align: center; }
+
+/* 编辑弹窗 */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,30); display: none;
+  align-items: center; justify-content: center; z-index: 999;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: #FFF; border-radius: 12px; padding: 20px; width: 380px;
+  box-shadow: 0 8px 32px rgba(0,0,0,15);
+}
+.modal h3 { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px; }
+.modal label { font-size: 12px; color: #777; display: block; margin-bottom: 4px; margin-top: 8px; }
+.modal input, .modal select {
+  width: 100%; padding: 7px 10px; border: 1px solid #DDD; border-radius: 6px;
+  font-size: 13px; outline: none;
+}
+.modal input:focus, .modal select:focus { border-color: #4CAF50; }
+.modal-row { display: flex; gap: 8px; }
+.modal-row > div { flex: 1; }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.modal-btns button {
+  padding: 7px 18px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid #DDD;
+  background: #FFF; color: #666;
+}
+.modal-btns button.primary { background: #4CAF50; color: #FFF; border-color: #43A047; }
+.modal-btns button.primary:hover { background: #43A047; }
+.modal-btns button:hover { background: #F5F5F5; }
+</style>
+</head>
+<body>
+<!-- 标题栏 -->
+<div class="titlebar">
+  <h3>📋 待办面板</h3>
+  <div class="titlebar-btns">
+    <button onclick="togglePin()" title="置顶" id="pinBtn">📌</button>
+    <button onclick="minimizeWin()" title="最小化">—</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- 左侧：待办清单 -->
+  <div class="left-panel">
+    <div class="todo-header">
+      <div class="todo-filters">
+        <input type="text" id="searchInput" placeholder="🔍 搜索待办..." oninput="renderTodos()">
+        <select id="filterSelect" onchange="renderTodos()">
+          <option value="all">全部</option>
+          <option value="pending">未完成</option>
+          <option value="done">已完成</option>
+          <option value="archived">已归档</option>
+        </select>
+        <select id="catSelect" onchange="renderTodos()">
+          <option value="">所有分类</option>
+          <option>工作</option>
+          <option>生活</option>
+          <option>学习</option>
+          <option>项目</option>
+        </select>
+      </div>
+      <div class="todo-add">
+        <input type="text" id="addInput" placeholder="输入新任务，回车快速添加..." onkeydown="if(event.key==='Enter')quickAdd()">
+        <select id="priSelect">
+          <option value="green">🟢 低</option>
+          <option value="orange">🟠 中</option>
+          <option value="blue">🔵 高</option>
+          <option value="red">🔴 紧急</option>
+        </select>
+        <button onclick="openCreateModal()">+ 添加</button>
+      </div>
+    </div>
+    <div class="todo-stats">
+      <span id="statsText">共 0 项 | ✅ 0 | ⏳ 0</span>
+      <div class="sort-bar">
+        <select id="sortSelect" onchange="renderTodos()">
+          <option value="time">⏰ 按时间排序</option>
+          <option value="priority">🔴 按优先级排序</option>
+          <option value="order">📋 按添加顺序</option>
+        </select>
+        <button onclick="clearDone()">🗑 清除已完成</button>
+      </div>
+    </div>
+    <div class="todo-list" id="todoList"></div>
+  </div>
+
+  <!-- 右侧：天气+日历 -->
+  <div class="right-panel">
+    <!-- 天气+时间卡 -->
+    <div class="right-card" id="weatherCard">
+      <div class="time-row">
+        <div class="time-box">
+          <div class="clock" id="clockTime">--:--</div>
+          <div class="date" id="clockDate"></div>
+          <div class="lunar" id="lunarDate"></div>
+        </div>
+        <div class="weather-box">
+          <div class="temp" id="weatherTemp">--°</div>
+          <div class="desc" id="weatherDesc">加载中...</div>
+          <div class="detail" id="weatherDetail"></div>
+        </div>
+      </div>
+      <div class="weather-alert" id="weatherAlert" style="display:none"></div>
+      <div class="forecast-row" id="forecastRow"></div>
+      <button class="forecast-toggle" id="forecastToggle" onclick="toggleForecast()">▼ 收起预报</button>
+    </div>
+
+    <!-- 日历 -->
+    <div class="calendar-section">
+      <div class="cal-header">
+        <button onclick="calNav(-1)">◀</button>
+        <span class="cal-title" id="calTitle">2026年5月</span>
+        <button onclick="calNav(1)">▶</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="date-todos" id="dateTodos">
+        <div class="dt-title" id="dateTodosTitle">今日待办</div>
+        <div id="dateTodosList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑弹窗 -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3 id="modalTitle">✏️ 编辑待办</h3>
+    <label>任务内容</label>
+    <input type="text" id="editText" placeholder="请输入任务内容...">
+    <div class="modal-row">
+      <div>
+        <label>优先级</label>
+        <select id="editPri">
+          <option value="green">🟢 低</option>
+          <option value="orange">🟠 中</option>
+          <option value="blue">🔵 高</option>
+          <option value="red">🔴 紧急</option>
+        </select>
+      </div>
+      <div>
+        <label>分类</label>
+        <select id="editCat">
+          <option value="">无</option>
+          <option>工作</option>
+          <option>生活</option>
+          <option>学习</option>
+          <option>项目</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div>
+        <label>截止日期</label>
+        <input type="date" id="editDue">
+      </div>
+      <div>
+        <label>截止时间</label>
+        <input type="time" id="editDueTime">
+      </div>
+    </div>
+    <div class="modal-row">
+      <div>
+        <label>重复</label>
+        <select id="editRepeat">
+          <option value="">不重复</option>
+          <option value="daily">每天</option>
+          <option value="weekly">每周</option>
+          <option value="monthly">每月</option>
+        </select>
+      </div>
+      <div>
+        <label>备注</label>
+        <input type="text" id="editNote" placeholder="可选备注...">
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button onclick="closeEditModal()">取消</button>
+      <button class="primary" id="modalSaveBtn" onclick="saveEdit()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var ipcRenderer = require('electron').ipcRenderer;
+
+// ===== 数据 =====
+var todos = [];
+var calYear, calMonth, selectedDate;
+var forecastVisible = true;
+var editingId = null;
+
+// ===== 初始化 =====
+ipcRenderer.invoke('todo-load').then(function(data) {
+  todos = data || [];
+  renderTodos();
+  renderCalendar();
+});
+
+// 监听数据变更
+ipcRenderer.on('todo-changed', function() {
+  ipcRenderer.invoke('todo-load').then(function(data) {
+    todos = data || [];
+    renderTodos();
+    renderCalendar();
+  });
+});
+
+// ===== 待办 CRUD =====
+function quickAdd() {
+  var text = document.getElementById('addInput').value.trim();
+  if (!text) return;
+  var pri = document.getElementById('priSelect').value;
+  ipcRenderer.invoke('todo-add', { text: text, priority: pri }).then(function() {
+    document.getElementById('addInput').value = '';
+    refreshData();
+  });
+}
+
+// 打开新建弹窗
+function openCreateModal() {
+  editingId = null; // null = 新建模式
+  document.getElementById('modalTitle').textContent = '➕ 新建待办';
+  document.getElementById('modalSaveBtn').textContent = '➕ 添加';
+  document.getElementById('editText').value = document.getElementById('addInput').value.trim() || '';
+  document.getElementById('editPri').value = document.getElementById('priSelect').value;
+  document.getElementById('editCat').value = '';
+  // 默认截止今天
+  var today = new Date();
+  document.getElementById('editDue').value = today.toISOString().slice(0, 10);
+  document.getElementById('editDueTime').value = '18:00';
+  document.getElementById('editRepeat').value = '';
+  document.getElementById('editNote').value = '';
+  document.getElementById('editModal').classList.add('show');
+  document.getElementById('editText').focus();
+}
+
+function toggleDone(id) {
+  ipcRenderer.invoke('todo-toggle', id).then(refreshData);
+}
+
+function deleteTodo(id) {
+  ipcRenderer.invoke('todo-delete', id).then(refreshData);
+}
+
+function archiveTodo(id) {
+  ipcRenderer.invoke('todo-archive', id).then(refreshData);
+}
+
+function clearDone() {
+  ipcRenderer.invoke('todo-clear-done').then(refreshData);
+}
+
+function refreshData() {
+  ipcRenderer.invoke('todo-load').then(function(data) {
+    todos = data || [];
+    renderTodos();
+    renderCalendar();
+  });
+}
+
+// ===== 编辑弹窗 =====
+function openEditModal(id) {
+  var todo = todos.find(function(t) { return t.id === id; });
+  if (!todo) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = '✏️ 编辑待办';
+  document.getElementById('modalSaveBtn').textContent = '💾 保存';
+  document.getElementById('editText').value = todo.text;
+  document.getElementById('editPri').value = todo.priority || 'green';
+  document.getElementById('editCat').value = todo.category || '';
+  document.getElementById('editDue').value = todo.due_date || '';
+  document.getElementById('editDueTime').value = todo.due_time || '';
+  document.getElementById('editRepeat').value = todo.repeat || '';
+  document.getElementById('editNote').value = todo.note || '';
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('show');
+  editingId = null;
+}
+
+function saveEdit() {
+  var text = document.getElementById('editText').value.trim();
+  if (!text) return;
+  var data = {
+    text: text,
+    priority: document.getElementById('editPri').value,
+    category: document.getElementById('editCat').value,
+    due_date: document.getElementById('editDue').value || null,
+    due_time: document.getElementById('editDueTime').value || null,
+    repeat: document.getElementById('editRepeat').value || null,
+    note: document.getElementById('editNote').value || ''
+  };
+
+  if (editingId === null) {
+    // 新建模式
+    ipcRenderer.invoke('todo-add', data).then(function() {
+      closeEditModal();
+      document.getElementById('addInput').value = '';
+      refreshData();
+    });
+  } else {
+    // 编辑模式
+    data.id = editingId;
+    ipcRenderer.invoke('todo-update', data).then(function() {
+      closeEditModal();
+      refreshData();
+    });
+  }
+}
+
+// ===== 倒计时计算 =====
+function getCountdown(todo) {
+  if (todo.done) return null;
+  if (!todo.due_date) return null;
+  var dueStr = todo.due_date;
+  if (todo.due_time) {
+    dueStr += 'T' + todo.due_time + ':00';
+  } else {
+    dueStr += 'T23:59:59';
+  }
+  var dueTime = new Date(dueStr).getTime();
+  var now = Date.now();
+  var diff = dueTime - now;
+
+  if (diff < 0) {
+    var ago = -diff;
+    if (ago < 3600000) return { text: '已过期 ' + Math.floor(ago / 60000) + '分钟', cls: 'overdue' };
+    if (ago < 86400000) return { text: '已过期 ' + Math.floor(ago / 3600000) + '小时', cls: 'overdue' };
+    return { text: '已过期 ' + Math.floor(ago / 86400000) + '天', cls: 'overdue' };
+  }
+  if (diff < 3600000) {
+    var min = Math.floor(diff / 60000);
+    return { text: '⏰ ' + min + '分钟', cls: 'urgent' };
+  }
+  if (diff < 86400000) {
+    var h = Math.floor(diff / 3600000);
+    var m = Math.floor((diff % 3600000) / 60000);
+    return { text: '⏰ ' + h + '小时' + m + '分钟', cls: 'soon' };
+  }
+  var days = Math.floor(diff / 86400000);
+  var h = Math.floor((diff % 86400000) / 3600000);
+  return { text: days + '天' + h + '小时', cls: 'normal' };
+}
+
+function getDueTimestamp(todo) {
+  if (!todo.due_date) return Infinity;
+  var s = todo.due_date + 'T' + (todo.due_time || '23:59') + ':00';
+  return new Date(s).getTime();
+}
+
+// ===== 渲染待办列表 =====
+function renderTodos() {
+  var list = document.getElementById('todoList');
+  var search = document.getElementById('searchInput').value.trim().toLowerCase();
+  var filter = document.getElementById('filterSelect').value;
+  var cat = document.getElementById('catSelect').value;
+  var sortMode = document.getElementById('sortSelect').value;
+
+  var filtered = todos.filter(function(t) {
+    if (filter === 'pending' && (t.done || t.archived)) return false;
+    if (filter === 'done' && (!t.done || t.archived)) return false;
+    if (filter === 'archived' && !t.archived) return false;
+    if (cat && t.category !== cat) return false;
+    if (search && t.text.toLowerCase().indexOf(search) < 0) return false;
+    return true;
+  });
+
+  // 排序
+  var priOrder = { red: 4, blue: 3, orange: 2, green: 1 };
+  filtered.sort(function(a, b) {
+    // 已完成永远在后面
+    if (a.done !== b.done) return a.done ? 1 : -1;
+
+    if (sortMode === 'time') {
+      // 按截止时间排序（最近的在前）
+      var ta = getDueTimestamp(a), tb = getDueTimestamp(b);
+      if (ta !== tb) return ta - tb;
+      // 时间相同则按优先级
+      return (priOrder[b.priority||'green']||0) - (priOrder[a.priority||'green']||0);
+    } else if (sortMode === 'priority') {
+      // 按优先级排序（高的在前）
+      return (priOrder[b.priority||'green']||0) - (priOrder[a.priority||'green']||0);
+    } else {
+      // 按添加顺序
+      return (a.order || 0) - (b.order || 0);
+    }
+  });
+
+  // 统计
+  var totalCount = todos.length;
+  var activeCount = todos.filter(function(t) { return !t.archived && !t.done; }).length;
+  var doneCount = todos.filter(function(t) { return t.done && !t.archived; }).length;
+  var archivedCount = todos.filter(function(t) { return t.archived; }).length;
+  document.getElementById('statsText').textContent = '共 ' + totalCount + ' 项 | ⏳ ' + activeCount + ' | ✅ ' + doneCount + ' | 📦 ' + archivedCount;
+
+  list.innerHTML = filtered.map(function(t) {
+    var doneCls = t.done ? ' done' : '';
+    if (t.archived) doneCls += ' archived-item';
+    var meta = [];
+    if (t.category) meta.push('📁 ' + t.category);
+    if (t.due_date) {
+      var dateText = t.due_date;
+      if (t.due_time) dateText += ' ' + t.due_time;
+      meta.push('📅 ' + dateText);
+    }
+    if (t.repeat) {
+      var rn = {daily:'每天',weekly:'每周',monthly:'每月'};
+      meta.push('🔄 ' + (rn[t.repeat]||''));
+    }
+    if (t.note) meta.push('📝 ' + t.note);
+
+    // 倒计时
+    var countdown = getCountdown(t);
+    var countdownHtml = '';
+    if (countdown) {
+      countdownHtml = '<div class="countdown ' + countdown.cls + '">' + countdown.text + '</div>';
+    } else if (t.done && t.due_date) {
+      countdownHtml = '<div class="countdown done-countdown">✅ 已完成</div>';
+    }
+
+    return '<div class="todo-item' + doneCls + '">' +
+      '<div class="dot ' + (t.priority||'green') + '"></div>' +
+      '<div class="cb" onclick="toggleDone(' + t.id + ')"></div>' +
+      '<div class="content">' +
+        '<div class="text">' + escHtml(t.text) + '</div>' +
+        (meta.length ? '<div class="meta">' + meta.join('') + '</div>' : '') +
+        countdownHtml +
+      '</div>' +
+      '<div class="actions">' +
+        '<button onclick="openEditModal(' + t.id + ')" title="编辑">✏️</button>' +
+        (!t.archived ? '<button onclick="archiveTodo(' + t.id + ')" title="归档">📦</button>' : '<button onclick="archiveTodo(' + t.id + ')" title="取消归档" style="opacity:0.5">📤</button>') +
+        '<button class="del" onclick="deleteTodo(' + t.id + ')" title="删除">🗑</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// 每分钟刷新倒计时
+setInterval(function() { renderTodos(); }, 60000);
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ===== 时钟 =====
+function updateClock() {
+  var now = new Date();
+  var h = String(now.getHours()).padStart(2,'0');
+  var m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clockTime').textContent = h + ':' + m;
+
+  var weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+  document.getElementById('clockDate').textContent =
+    now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 ' + weekdays[now.getDay()];
+
+  // 农历（通过IPC获取）
+  ipcRenderer.invoke('todo-lunar', {
+    year: now.getFullYear(), month: now.getMonth()+1, day: now.getDate()
+  }).then(function(info) {
+    var parts = [info.lunar];
+    if (info.holiday) parts.push('🎉 ' + info.holiday);
+    if (info.solarTerm) parts.push('🌿 ' + info.solarTerm);
+    document.getElementById('lunarDate').textContent = parts.join('  ');
+  });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ===== 天气（免费 wttr.in） =====
+function updateWeather() {
+  ipcRenderer.invoke('todo-weather').then(function(w) {
+    if (!w) return;
+    var c = w.current || {};
+    document.getElementById('weatherTemp').innerHTML = (c.icon||'🌤️') + ' ' + (c.temp||'--') + '°';
+    document.getElementById('weatherDesc').textContent = c.desc || '';
+    document.getElementById('weatherDetail').textContent =
+      '体感 ' + (c.feels_like||'--') + '°  💧' + (c.humidity||'--') + '%  🌬' + (c.wind_speed||'--') + 'km/h';
+
+    // 预报
+    var forecasts = w.forecast || [];
+    var row = document.getElementById('forecastRow');
+    if (forecasts.length > 0) {
+      row.innerHTML = forecasts.slice(0, 7).map(function(f, i) {
+        var label = i === 0 ? '今天' : f.weekday;
+        return '<div class="forecast-item">' +
+          '<div>' + label + '</div>' +
+          '<div class="f-icon">' + (f.icon||'') + '</div>' +
+          '<div class="f-temp">' + f.min_temp + '°/' + f.max_temp + '°</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    // 预警
+    var alerts = w.alerts || [];
+    var alertEl = document.getElementById('weatherAlert');
+    if (alerts.length > 0) {
+      alertEl.textContent = '⚠️ ' + alerts.map(function(a){ return a.desc; }).join(' | ');
+      alertEl.style.display = '';
+    } else {
+      alertEl.style.display = 'none';
+    }
+  });
+}
+updateWeather();
+setInterval(updateWeather, 600000); // 10分钟
+
+function toggleForecast() {
+  forecastVisible = !forecastVisible;
+  document.getElementById('forecastRow').style.display = forecastVisible ? '' : 'none';
+  document.getElementById('forecastToggle').textContent = forecastVisible ? '▼ 收起预报' : '▲ 展开预报';
+}
+
+// ===== 日历 =====
+function initCalendar() {
+  var now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  selectedDate = formatDate(now);
+  renderCalendar();
+}
+
+function calNav(dir) {
+  calMonth += dir;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+}
+
+function formatDate(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function renderCalendar() {
+  document.getElementById('calTitle').textContent = calYear + '年' + (calMonth+1) + '月';
+
+  var grid = document.getElementById('calGrid');
+  var html = '';
+  var dayNames = ['一','二','三','四','五','六','日'];
+  dayNames.forEach(function(n, i) {
+    html += '<div class="cal-day-name' + (i>=5?' weekend':'') + '">' + n + '</div>';
+  });
+
+  var firstDay = new Date(calYear, calMonth, 1);
+  var startDow = firstDay.getDay() || 7; // 1=Mon...7=Sun
+  var daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  var prevDays = new Date(calYear, calMonth, 0).getDate();
+
+  var today = formatDate(new Date());
+
+  // 统计每天的待办数量（基于创建时间和截止日期）
+  var dateCountMap = {};
+  todos.forEach(function(t) {
+    if (t.archived) return;
+    // 按创建日期
+    if (t.created_at) {
+      var cd = new Date(t.created_at * 1000);
+      var cdStr = formatDate(cd);
+      if (!dateCountMap[cdStr]) dateCountMap[cdStr] = { count: 0, maxPri: 'green' };
+      dateCountMap[cdStr].count++;
+      var priOrder = {red:4, blue:3, orange:2, green:1};
+      if (priOrder[t.priority||'green'] > priOrder[dateCountMap[cdStr].maxPri]) {
+        dateCountMap[cdStr].maxPri = t.priority || 'green';
+      }
+    }
+    // 按截止日期
+    if (t.due_date && t.due_date !== (t.created_at ? formatDate(new Date(t.created_at * 1000)) : '')) {
+      if (!dateCountMap[t.due_date]) dateCountMap[t.due_date] = { count: 0, maxPri: 'green' };
+      dateCountMap[t.due_date].count++;
+      var priOrder2 = {red:4, blue:3, orange:2, green:1};
+      if (priOrder2[t.priority||'green'] > priOrder2[dateCountMap[t.due_date].maxPri]) {
+        dateCountMap[t.due_date].maxPri = t.priority || 'green';
+      }
+    }
+  });
+
+  // 获取节假日信息
+  ipcRenderer.invoke('todo-month-info', { year: calYear, month: calMonth + 1 }).then(function(monthInfo) {
+    renderCalDays(html, daysInMonth, startDow, prevDays, today, dateCountMap, monthInfo || {});
+  });
+}
+
+function renderCalDays(html, daysInMonth, startDow, prevDays, today, dateCountMap, monthInfo) {
+  var grid = document.getElementById('calGrid');
+
+  // 上月补位
+  for (var i = startDow - 1; i > 0; i--) {
+    html += '<div class="cal-day other-month">' + (prevDays - i + 1) + '</div>';
+  }
+
+  // 本月
+  for (var d = 1; d <= daysInMonth; d++) {
+    var dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var cls = 'cal-day';
+    if (dateStr === today) cls += ' today';
+    if (dateStr === selectedDate) cls += ' selected';
+
+    var dow = new Date(calYear, calMonth, d).getDay();
+    if (dow === 0) cls += ' weekend';
+    else if (dow === 6) cls += ' weekend-sat';
+
+    // 节假日/节气
+    var holiday = (monthInfo.holidays || {})[d] || '';
+    var solarTerm = (monthInfo.solarTerms || {})[d] || '';
+
+    // 待办计数角标
+    var countInfo = dateCountMap[dateStr];
+    var countHtml = '';
+    if (countInfo && countInfo.count > 0) {
+      countHtml = '<span class="cal-count ' + countInfo.maxPri + '">' + countInfo.count + '</span>';
+    }
+
+    var subText = holiday || solarTerm || '';
+    html += '<div class="' + cls + '" onclick="selectDate(\'' + dateStr + '\')">' +
+      d +
+      (subText ? '<span class="cal-holiday">' + subText + '</span>' : '') +
+      countHtml +
+    '</div>';
+  }
+
+  // 下月补位
+  var totalCells = (startDow - 1) + daysInMonth;
+  var remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (var j = 1; j <= remaining; j++) {
+    html += '<div class="cal-day other-month">' + j + '</div>';
+  }
+
+  grid.innerHTML = html;
+
+  // 渲染选中日期待办
+  renderDateTodos();
+}
+
+function selectDate(dateStr) {
+  selectedDate = dateStr;
+  renderCalendar();
+}
+
+function renderDateTodos() {
+  if (!selectedDate) return;
+  var d = new Date(selectedDate);
+  var weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+  document.getElementById('dateTodosTitle').textContent =
+    selectedDate + ' ' + weekdays[d.getDay()] + ' 的待办';
+
+  // 查找当天创建或截止的待办
+  var dayTodos = todos.filter(function(t) {
+    if (t.archived) return false;
+    if (t.due_date === selectedDate) return true;
+    if (t.created_at) {
+      var cd = formatDate(new Date(t.created_at * 1000));
+      if (cd === selectedDate) return true;
+    }
+    return false;
+  });
+
+  var container = document.getElementById('dateTodosList');
+  if (dayTodos.length === 0) {
+    container.innerHTML = '<div class="dt-empty">暂无待办 ✨</div>';
+    return;
+  }
+  container.innerHTML = dayTodos.map(function(t) {
+    return '<div class="dt-item">' +
+      '<div class="dt-dot ' + (t.priority||'green') + '" style="background:' +
+        ({green:'#4CAF50',orange:'#FF9800',blue:'#2196F3',red:'#F44336'}[t.priority||'green']) + '"></div>' +
+      '<span style="' + (t.done ? 'text-decoration:line-through;color:#BBB' : '') + '">' + escHtml(t.text) + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+initCalendar();
+
+// ===== 窗口控制 =====
+function togglePin() {
+  ipcRenderer.invoke('todo-toggle-pin').then(function(pinned) {
+    document.getElementById('pinBtn').style.color = pinned ? '#4CAF50' : '';
+  });
+}
+function minimizeWin() {
+  ipcRenderer.invoke('todo-minimize');
+}
+</script>
+</body>
+</html>

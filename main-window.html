@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>灵动 AI — 主窗口原型</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --sidebar-bg: #161618;
+    --sidebar-hover: #242428;
+    --sidebar-active: #2C2C30;
+    --sidebar-text: #A1A1A6;
+    --sidebar-text-active: #FFFFFF;
+    --sidebar-border: #2C2C30;
+    
+    --page-bg: #FBFBF9;
+    --surface: #FFFFFF;
+    --surface-secondary: #F4F4F0;
+    
+    --text-primary: #18181B;
+    --text-secondary: #71717A;
+    --text-tertiary: #A1A1AA;
+    
+    --border: #E4E4E7;
+    --border-light: #F4F4F5;
+    
+    --accent: #2563EB;
+    --accent-light: #DBEAFE;
+    --accent-dim: #60A5FA;
+    
+    --green: #16A34A;
+    --green-light: #DCFCE7;
+    --amber: #D97706;
+    --amber-light: #FEF3C7;
+    --red: #DC2626;
+    
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+    
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  
+  body {
+    font-family: var(--font-sans);
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 32px;
+  }
+  
+  .app-frame {
+    width: 960px;
+    height: 640px;
+    background: var(--page-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    box-shadow: 
+      0 0 0 1px rgba(0,0,0,0.06),
+      0 24px 60px rgba(0,0,0,0.2),
+      0 8px 24px rgba(0,0,0,0.12);
+  }
+  
+  .sidebar {
+    width: 220px;
+    background: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  
+  .sidebar-header {
+    padding: 20px 16px 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .sidebar-logo {
+    width: 24px; height: 24px;
+    border-radius: 7px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 12px; font-weight: 600;
+  }
+  
+  .sidebar-title {
+    color: var(--sidebar-text-active);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  
+  .sidebar-new-chat {
+    margin: 8px 12px 12px 12px;
+    padding: 8px 12px;
+    background: var(--sidebar-hover);
+    border: none; border-radius: 8px;
+    color: var(--sidebar-text-active);
+    font-size: 13px; font-family: inherit;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    width: calc(100% - 24px);
+    transition: background 0.15s;
+  }
+  
+  .sidebar-new-chat:hover { background: var(--sidebar-active); }
+  
+  .sidebar-section {
+    padding: 12px 16px 4px 16px;
+    font-size: 10px; font-weight: 600;
+    color: #52525B;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  
+  .sidebar-chat-item {
+    margin: 1px 8px;
+    padding: 7px 8px;
+    font-size: 13px; color: var(--sidebar-text);
+    border-radius: 7px;
+    cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: all 0.12s;
+  }
+  
+  .sidebar-chat-item:hover { background: var(--sidebar-hover); color: var(--sidebar-text-active); }
+  .sidebar-chat-item.active { background: var(--sidebar-active); color: var(--sidebar-text-active); }
+  
+  .sidebar-agent-item {
+    margin: 1px 8px;
+    padding: 7px 8px;
+    font-size: 13px; color: var(--sidebar-text);
+    border-radius: 7px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: all 0.12s;
+  }
+  
+  .sidebar-agent-item:hover { background: var(--sidebar-hover); color: var(--sidebar-text-active); }
+  
+  .agent-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green { background: var(--green); }
+  .dot-blue { background: var(--accent); }
+  .dot-amber { background: var(--amber); }
+  
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px;
+    border-top: 1px solid var(--sidebar-border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  
+  .sidebar-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white; font-size: 11px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  
+  .sidebar-user-info {
+    min-width: 0;
+  }
+  
+  .sidebar-user-name { font-size: 12px; font-weight: 600; color: var(--sidebar-text-active); }
+  .sidebar-user-ver { font-size: 10px; color: #52525B; }
+  
+  .main-area {
+    flex: 1;
+    display: flex; flex-direction: column;
+    min-width: 0;
+  }
+  
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 36px 0 24px 0;
+    scroll-behavior: smooth;
+  }
+  
+  .chat-container {
+    max-width: 580px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  
+  .msg-group { margin-bottom: 28px; }
+  
+  .msg-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  
+  .msg-header-right {
+    display: flex; align-items: center; gap: 10px;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+  }
+  
+  .msg-avatar {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: white; font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  
+  .msg-avatar-user {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: #18181B;
+    color: white; font-size: 10px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  
+  .msg-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .msg-time { font-size: 11px; color: var(--text-tertiary); }
+  
+  .msg-bubble-ai {
+    font-size: 14px; line-height: 1.7;
+    color: var(--text-primary);
+  }
+  
+  .msg-bubble-user {
+    background: #18181B;
+    color: #FFFFFF;
+    border-radius: 16px 16px 4px 16px;
+    padding: 10px 16px;
+    font-size: 14px; line-height: 1.6;
+    display: inline-block;
+    max-width: 85%;
+  }
+  
+  .agent-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    transition: box-shadow 0.15s;
+  }
+  
+  .agent-card:hover { box-shadow: var(--shadow-sm); }
+  
+  .agent-card-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .agent-card-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  
+  .agent-card-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  
+  .agent-card-status {
+    margin-left: auto;
+    font-size: 10px; font-weight: 600;
+    padding: 2px 8px; border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+  
+  .status-done { background: var(--green-light); color: var(--green); }
+  
+  .agent-card-body {
+    font-size: 13px; color: var(--text-secondary); line-height: 1.5;
+  }
+  
+  .msg-continue {
+    font-size: 14px; line-height: 1.7;
+    color: var(--text-primary);
+    margin-top: 12px;
+  }
+  
+  .input-area {
+    padding: 0 24px 24px 24px;
+  }
+  
+  .input-container {
+    max-width: 580px;
+    margin: 0 auto;
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s;
+  }
+  
+  .input-container:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1), var(--shadow-sm);
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 12px 48px 12px 16px;
+    background: transparent;
+    border: none;
+    font-size: 14px; font-family: inherit;
+    color: var(--text-primary);
+    outline: none;
+    resize: none;
+    line-height: 1.5;
+    min-height: 44px;
+    max-height: 120px;
+  }
+  
+  .input-field::placeholder { color: #A1A1AA; }
+  
+  .input-actions {
+    position: absolute; right: 10px; top: 50%;
+    transform: translateY(-50%);
+    display: flex; gap: 4px;
+  }
+  
+  .input-btn {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.12s;
+  }
+  
+  .input-btn:hover { background: var(--surface-secondary); color: var(--text-primary); }
+  .input-btn.send { background: var(--accent); color: white; }
+  .input-btn.send:hover { background: #1D4ED8; }
+  
+  .typing-indicator {
+    display: flex; gap: 4px;
+    padding: 4px 0;
+  }
+  
+  .typing-indicator span {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+    animation: typeBounce 1.4s ease-in-out infinite;
+  }
+  
+  .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+  
+  @keyframes typeBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-frame">
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">灵</div>
+      <span class="sidebar-title">灵动 AI</span>
+    </div>
+    
+    <button class="sidebar-new-chat">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      新对话
+    </button>
+    
+    <div class="sidebar-section">对话</div>
+    <div class="sidebar-chat-item active">周报汇总与邮件发送</div>
+    <div class="sidebar-chat-item">API 文档审查</div>
+    <div class="sidebar-chat-item">重构建议分析</div>
+    <div class="sidebar-chat-item">桌面宠物动画设计</div>
+    
+    <div class="sidebar-section">Agent</div>
+    <div class="sidebar-agent-item"><span class="agent-dot dot-green"></span>项目管理</div>
+    <div class="sidebar-agent-item"><span class="agent-dot dot-blue"></span>代码助手</div>
+    <div class="sidebar-agent-item"><span class="agent-dot dot-amber"></span>邮件助手</div>
+    
+    <div class="sidebar-footer">
+      <div class="sidebar-avatar">E</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name">User</div>
+        <div class="sidebar-user-ver">灵动AI v1.2.0</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-area">
+    <div class="chat-area">
+      <div class="chat-container">
+
+        <div class="msg-group">
+          <div class="msg-header">
+            <div class="msg-avatar">AI</div>
+            <span class="msg-name">灵动 AI</span>
+            <span class="msg-time">刚刚</span>
+          </div>
+          <div class="msg-bubble-ai">
+            你好，我是灵动 AI。<br>
+            我可以帮你管理项目、编写代码、处理邮件。试试让我调度多个 Agent 协同工作。
+          </div>
+        </div>
+
+        <div class="msg-group" style="display:flex;flex-direction:column;align-items:flex-end;">
+          <div class="msg-header-right">
+            <span class="msg-time">刚刚</span>
+            <span class="msg-name">User</span>
+            <div class="msg-avatar-user">E</div>
+          </div>
+          <div class="msg-bubble-user">
+            帮我把上周跟进的项目汇总成周报，然后发给 team@example.com
+          </div>
+        </div>
+
+        <div class="msg-group">
+          <div class="msg-header">
+            <div class="msg-avatar">AI</div>
+            <span class="msg-name">灵动 AI</span>
+            <span class="msg-time" style="color:var(--accent-dim)">正在调度 Agent</span>
+          </div>
+
+          <div class="typing-indicator" style="margin-bottom:10px">
+            <span></span><span></span><span></span>
+          </div>
+
+          <div class="agent-card">
+            <div class="agent-card-header">
+              <span class="agent-card-dot" style="background:var(--green)"></span>
+              <span class="agent-card-name">项目管理 Agent</span>
+              <span class="agent-card-status status-done">完成</span>
+            </div>
+            <div class="agent-card-body">
+              已汇总 3 个活跃项目：API 网关重构（进度 80%）、用户中心 v2（进度 45%）、数据看板（进度 60%），生成了结构化周报。
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <div class="agent-card-header">
+              <span class="agent-card-dot" style="background:var(--amber)"></span>
+              <span class="agent-card-name">邮件助手 Agent</span>
+              <span class="agent-card-status status-done">完成</span>
+            </div>
+            <div class="agent-card-body">
+              邮件已发送至 team@example.com，标题「项目周报 · 2026年第24周」。已抄送主管，包含3个项目的详细进度表。
+            </div>
+          </div>
+
+          <div class="msg-continue">
+            全部完成。项目管理 Agent 汇总了 3 个项目的周报数据，邮件助手已将完整报告发送至团队邮箱。<br><br>
+            需要我展开周报全文，或者调整邮件内容吗？
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-container">
+        <input class="input-field" type="text" value="帮我汇总上周项目进度并发送周报" readonly>
+        <div class="input-actions">
+          <button class="input-btn send">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+</body>
+</html>

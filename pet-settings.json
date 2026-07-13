@@ -1,0 +1,30 @@
+{
+  "pet": {
+    "name": "小宠",
+    "wakeWord": "小天小天",
+    "voiceEnabled": false,
+    "ttsSpeed": 1,
+    "themeColor": "#4CAF50"
+  },
+  "backend": {
+    "type": "standalone",
+    "openclaw": {
+      "url": ""
+    },
+    "hermes": {
+      "url": ""
+    },
+    "custom": {
+      "apiKey": "",
+      "baseUrl": "",
+      "model": ""
+    }
+  },
+  "model": {
+    "apiKey": "",
+    "baseUrl": "",
+    "name": "",
+    "temperature": 0.7,
+    "maxTokens": 4096
+  }
+}

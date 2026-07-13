@@ -1,0 +1,3157 @@
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>灵动AI - 由Li独立开发的桌面AI助手</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
+  <style>
+    /* ===== Design Tokens (Apple-inspired) ===== */
+    :root {
+      --bg-root: #ffffff;
+      --bg-sidebar: #f5f5f7;
+      --bg-panel: #ffffff;
+      --bg-hover: #f0f0f2;
+      --bg-active: #e8e8ea;
+      --bg-input: #f5f5f7;
+      --border: #d2d2d7;
+      --border-subtle: #e5e5ea;
+      --border-input: #d2d2d7;
+      --accent: #007AFF;
+      --accent-hover: #0051D5;
+      --accent-light: #E5F1FF;
+      --accent-glow: rgba(0,122,255,0.1);
+      --green: #0f7b4e;
+      --green-bg: #eaf6f0;
+      --red: #e03e3e;
+      --red-bg: #fbecec;
+      --orange: #d97706;
+      --orange-bg: #fef5e7;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #9b9b9b;
+      --text-placeholder: #b0b0b0;
+      --sidebar-width: 240px;
+      --header-height: 48px;
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --radius-xl: 10px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+      --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+      --transition-fast: 0.12s ease;
+      --transition-normal: 0.18s ease;
+      --transition-slow: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    }
+
+    [data-theme="dark"] {
+      --bg-root: #191919;
+      --bg-sidebar: #1e1e1e;
+      --bg-panel: #252525;
+      --bg-hover: #2a2a2a;
+      --bg-active: #2f2f2f;
+      --bg-input: #2a2a2a;
+      --border: #333333;
+      --border-subtle: #2e2e2e;
+      --border-input: #3a3a3a;
+      --accent: #4dabf7;
+      --accent-hover: #339af0;
+      --accent-light: rgba(77,171,247,0.12);
+      --accent-glow: rgba(77,171,247,0.1);
+      --green: #51cf66;
+      --green-bg: rgba(81,207,102,0.12);
+      --red: #ff6b6b;
+      --red-bg: rgba(255,107,107,0.12);
+      --orange: #ffa94d;
+      --orange-bg: rgba(255,169,77,0.12);
+      --text-primary: #e0e0e0;
+      --text-secondary: #999999;
+      --text-muted: #666666;
+      --text-placeholder: #555555;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-lg: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    /* ===== Reset ===== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      background: var(--bg-root);
+      color: var(--text-primary);
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+    [data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+    [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    /* ===== App Shell ===== */
+    #app {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+
+    /* ===== Sidebar (Glassmorphism) ===== */
+    .sidebar {
+      width: var(--sidebar-width);
+      min-width: var(--sidebar-width);
+      max-width: var(--sidebar-width);
+      height: 100vh;
+      background: rgba(245,245,247,0.85);
+      backdrop-filter: blur(20px) saturate(1.8);
+      -webkit-backdrop-filter: blur(20px) saturate(1.8);
+      border-right: 1px solid rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    [data-theme="dark"] .sidebar {
+      background: rgba(30,30,30,0.85);
+      border-right: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .logo-area {
+      padding: 14px 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.2px;
+    }
+
+    .logo-version {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .nav-section {
+      padding: 14px 14px 6px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .menu {
+      padding: 4px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      flex-shrink: 0;
+    }
+
+    .menu-scroll {
+      overflow-y: auto;
+      flex-shrink: 1;
+      min-height: 0;
+    }
+
+    .group-chat-list-container {
+      padding: 0 8px;
+      max-height: 180px;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .menu-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      transition: all var(--transition-fast);
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+
+    .menu-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .menu-item.active {
+      background: var(--bg-active);
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .menu-icon {
+      width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .menu-icon svg {
+      width: 16px; height: 16px;
+    }
+
+    .menu-badge {
+      margin-left: auto;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-weight: 600;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 14px 14px 18px;
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+      flex-shrink: 0;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px rgba(15,123,78,0.3);
+      animation: pulse-dot 2s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ===== Main Panel ===== */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      height: 100vh;
+      background: var(--bg-panel);
+    }
+
+    .header {
+      height: var(--header-height);
+      min-height: var(--header-height);
+      padding: 0 20px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .header-title {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-primary);
+    }
+
+    .header-title-icon {
+      width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .header-title-icon svg {
+      width: 16px; height: 16px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .header-btn {
+      width: 30px; height: 30px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      flex-shrink: 0;
+    }
+
+    .header-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .header-btn svg {
+      width: 16px; height: 16px;
+    }
+
+    /* ===== Content Area ===== */
+    .content {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      min-height: 0;
+    }
+
+    .page {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .page.is-hidden {
+      display: none;
+    }
+
+    /* ===== Chat Messages ===== */
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .message { /* bubble-width-fix */
+      display: flex;
+      gap: 10px;
+      max-width: 80%;
+      animation: msg-in 0.25s ease;
+      width: fit-content;
+    }
+
+    @keyframes msg-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      margin-left: auto;
+      flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      transition: transform 0.15s ease;
+    }
+    .message-avatar:hover {
+      transform: scale(1.08);
+    }
+
+    .message.assistant .message-avatar {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .message.user .message-avatar {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
+    .message-avatar img {
+      width: 100%; height: 100%;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+
+    .message-bubble {
+      padding: 10px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      max-width: 480px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+      overflow: hidden;
+      position: relative;
+    }
+    /* 代码块在气泡内可滚动 */
+    .message-bubble pre {
+      background: #f6f8fa;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 8px 0;
+      overflow-x: auto;
+      max-width: 100%;
+      font-size: 12px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .message-bubble code {
+      background: rgba(0,0,0,0.06);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 13px;
+    }
+    .message-bubble pre code {
+      background: none;
+      padding: 0;
+    }
+    /* 标题不溢出 */
+    .message-bubble h1, .message-bubble h2, .message-bubble h3 {
+      margin: 8px 0 4px;
+      font-size: 15px;
+      word-break: break-word;
+    }
+    /* 列表项 */
+    .message-bubble li {
+      margin-left: 16px;
+      word-break: break-word;
+    }
+
+    .message.assistant .message-bubble {
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(0,0,0,0.06);
+      border-top-left-radius: 4px;
+      color: #1d1d1f;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+    [data-theme="dark"] .message.assistant .message-bubble {
+      background: rgba(40,40,40,0.82);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: #e0e0e0;
+    }
+
+    .message.user .message-bubble {
+      background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+      color: white;
+      border-top-right-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,122,255,0.3);
+    }
+
+    .message-time {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .message.user .message-time { text-align: right; }
+
+    .confirm-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .confirm-btn {
+      padding: 7px 16px;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all var(--transition-fast);
+    }
+
+    .confirm-btn-yes { background: var(--green); color: white; }
+    .confirm-btn-yes:hover { filter: brightness(1.1); }
+    .confirm-btn-no { background: var(--bg-hover); color: var(--text-secondary); }
+    .confirm-btn-no:hover { background: var(--bg-active); }
+
+    .input-area {
+      padding: 12px 16px 20px;
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(0,0,0,0.06);
+      flex-shrink: 0;
+    }
+
+    [data-theme="dark"] .input-area {
+      background: rgba(28,28,30,0.92);
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .input-wrapper {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-input);
+      border: 1.5px solid rgba(0,0,0,0.1);
+      border-radius: 20px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+
+    .input-wrapper:focus-within {
+      border-color: #007AFF;
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.15);
+    }
+
+    #input {
+      width: 100%;
+      padding: 12px 14px 8px;
+      background: transparent;
+      border: none;
+      border-radius: 12px 12px 0 0;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+      min-height: 44px;
+      max-height: 160px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+
+    #input::placeholder { color: var(--text-placeholder); }
+
+    #gc-input {
+      width: 100%;
+      padding: 12px 14px 8px;
+      background: transparent;
+      border: none;
+      border-radius: 12px 12px 0 0;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+      min-height: 44px;
+      max-height: 160px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+
+    #gc-input::placeholder { color: var(--text-placeholder); }
+
+    .input-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 10px 8px;
+      gap: 6px;
+    }
+
+    .input-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .input-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .attach-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition-fast);
+      flex-shrink: 0;
+    }
+    .attach-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+    .send-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+      flex-shrink: 0;
+    }
+    .send-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
+    .send-btn:active { transform: scale(0.95); }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .stop-btn {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      border: 2px solid #ef4444;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(239,68,68,0.35);
+      animation: stopPulse 1.2s ease-in-out infinite;
+    }
+    @keyframes stopPulse {
+      0%, 100% { box-shadow: 0 2px 8px rgba(239,68,68,0.35); }
+      50% { box-shadow: 0 2px 16px rgba(239,68,68,0.6); }
+    }
+    .stop-btn:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); box-shadow: 0 4px 14px rgba(239,68,68,0.5); transform: scale(1.08); }
+    .stop-btn:active { transform: scale(0.95); }
+
+    .attach-preview {
+      display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 0 2px;
+    }
+    .attach-preview.empty { display: none; }
+
+    .attach-item {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--bg-hover); border: 1px solid var(--border-subtle);
+      border-radius: 4px; padding: 3px 8px; font-size: 11px; color: var(--text-secondary);
+      max-width: 160px;
+    }
+    .attach-item .attach-name {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100px;
+    }
+    .attach-item .attach-remove {
+      cursor: pointer; color: var(--text-muted); font-size: 13px;
+      line-height: 1; padding: 0 2px; flex-shrink: 0;
+    }
+    .attach-item .attach-remove:hover { color: var(--red); }
+
+    /* ===== Meeting Toolbar ===== */
+    .meeting-toolbar {
+      margin: 0 20px 10px;
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px 18px;
+      flex-shrink: 0;
+      animation: slide-down 0.25s ease;
+    }
+
+    @keyframes slide-down {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .meeting-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .meeting-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .meeting-status-icon { font-size: 18px; }
+    .meeting-status-text { font-weight: 600; font-size: 13px; }
+
+    .recording-dot {
+      width: 8px; height: 8px;
+      background: var(--red);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.5); opacity: 0.5; }
+    }
+
+    .meeting-timer {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .meeting-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn-meeting {
+      padding: 6px 14px;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .btn-meeting-start { background: var(--green); color: white; }
+    .btn-meeting-start:hover { filter: brightness(1.1); }
+    .btn-meeting-stop { background: var(--red); color: white; }
+    .btn-meeting-stop:hover { filter: brightness(1.1); }
+
+    .meeting-transcript {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      min-height: 70px;
+      max-height: 160px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-primary);
+    }
+
+    .meeting-transcript textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 8px;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 13px;
+      line-height: 1.6;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+    }
+
+    .meeting-transcript textarea::placeholder { color: var(--text-placeholder); }
+
+    .meeting-result {
+      max-height: 280px;
+      overflow-y: auto;
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-top: 10px;
+    }
+    .meeting-result h3 { color: var(--green); margin-bottom: 8px; font-size: 14px; }
+    .meeting-result pre {
+      background: var(--bg-panel);
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+
+
+    /* ===== Sessions Page ===== */
+    .sessions-container {
+      padding: 24px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .sessions-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .sessions-header h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .sessions-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .session-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .session-card:hover {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .session-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .session-card-preview {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .session-card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .session-card-delete {
+      opacity: 0;
+      transition: opacity var(--transition-fast);
+      margin-left: 8px;
+      cursor: pointer;
+      color: var(--red);
+    }
+
+    .session-card:hover .session-card-delete {
+      opacity: 1;
+    }
+
+    .session-card-delete:hover {
+      color: var(--red);
+      font-weight: bold;
+    }
+
+    /* ===== Settings Page ===== */
+    .settings-page {
+      padding: 28px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .settings-card {
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      max-width: 560px;
+    }
+
+    .settings-card h2 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+
+    .form-group { margin-bottom: 16px; }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 13px;
+      outline: none;
+      transition: all var(--transition-fast);
+      font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .form-group select { cursor: pointer; }
+    .form-group select option { background: var(--bg-panel); color: var(--text-primary); }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      padding: 8px 18px;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+    .btn-secondary:hover { background: var(--bg-active); color: var(--text-primary); }
+    .btn-danger { background: var(--red); color: white; }
+    .btn-danger:hover { filter: brightness(1.1); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .status-text {
+      margin-top: 10px;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    .status-success {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid rgba(15,123,78,0.15);
+    }
+
+    .status-error {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid rgba(224,62,62,0.15);
+    }
+
+    /* ===== List Pages (Agent/Skills) ===== */
+    .list-page {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .list-header h2 {
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 12px;
+    }
+
+    .agent-card {
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      cursor: pointer;
+      transition: all var(--transition-normal);
+    }
+
+    .agent-card:hover {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .agent-card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .agent-card-avatar {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      overflow: hidden;
+      flex-shrink: 0;
+      margin-right: 10px;
+    }
+
+    .agent-card-avatar img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+
+    .agent-card-name {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .agent-card-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .agent-card-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .agent-card-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .card-btn {
+      padding: 5px 12px;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      transition: all var(--transition-fast);
+    }
+
+    .card-btn-edit { background: var(--accent-light); color: var(--accent); }
+    .card-btn-edit:hover { background: rgba(35,131,226,0.18); }
+    .card-btn-delete { background: var(--red-bg); color: var(--red); }
+    .card-btn-delete:hover { background: rgba(224,62,62,0.15); }
+    .card-btn-use { background: var(--green-bg); color: var(--green); }
+    .card-btn-use:hover { background: rgba(15,123,78,0.15); }
+
+    .empty-state {
+      text-align: center;
+      padding: 50px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-state-text { font-size: 14px; margin-bottom: 6px; }
+    .empty-state-hint { font-size: 12px; color: var(--text-muted); }
+
+    /* ===== Stats Page ===== */
+    .stats-page {
+      padding: 28px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat-card {
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* ===== Group Chat Page ===== */
+    .gc-layout {
+      display: flex;
+      flex-direction: row;
+      height: 100%;
+    }
+
+    .gc-sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .gc-sidebar-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .gc-sidebar-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px;
+    }
+
+    .gc-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .gc-empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .gc-active {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .gc-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .gc-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .gc-input-area {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    /* ===== Edit Panel (slide from right) ===== */
+    .edit-panel-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all var(--transition-normal);
+    }
+
+    .edit-panel-overlay.visible { opacity: 1; visibility: visible; }
+
+    .edit-panel {
+      position: fixed;
+      top: 0;
+      right: -500px;
+      width: 480px;
+      height: 100vh;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border);
+      z-index: 1000;
+      transition: right var(--transition-slow);
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .edit-panel.visible { right: 0; }
+
+    .edit-panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .edit-panel-header h3 {
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .edit-panel-close {
+      width: 28px; height: 28px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+    }
+
+    .edit-panel-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+    .edit-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .edit-panel-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .edit-panel-footer .btn { flex: 1; }
+
+    .notes-section {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .notes-section h4 {
+      font-size: 13px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .dir-path-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .dir-path-input {
+      flex: 1;
+      padding: 6px 10px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      outline: none;
+    }
+
+    /* ===== Modals ===== */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.visible { display: flex; }
+
+    .modal {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      width: 460px;
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      animation: modal-in 0.2s ease;
+    }
+
+    @keyframes modal-in {
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .modal h3 {
+      font-size: 16px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .group-chat-list {
+      max-height: 280px;
+      overflow-y: auto;
+      margin: 12px 0;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .group-chat-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 6px;
+    }
+
+    .group-chat-item:hover { background: var(--bg-hover); border-color: var(--accent); }
+
+    /* ===== Notes Drawer ===== */
+    .notes-drawer-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 1999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all var(--transition-normal);
+    }
+
+    .notes-drawer-overlay.visible { opacity: 1; visibility: visible; }
+
+    .notes-drawer {
+      position: fixed;
+      top: 0;
+      right: -560px;
+      width: 540px;
+      height: 100vh;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border);
+      z-index: 2000;
+      transition: right var(--transition-slow);
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .notes-drawer.visible { right: 0; }
+
+    .notes-drawer-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .notes-drawer-header h3 {
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .notes-drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .notes-drawer-content {
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      line-height: 1.7;
+      font-size: 13px;
+      color: var(--text-primary);
+      margin-bottom: 14px;
+    }
+
+    .notes-drawer-actions {
+      display: flex;
+      gap: 8px;
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .notes-drawer-actions .btn { flex: 1; }
+
+    /* ===== Avatar Upload ===== */
+    .avatar-upload-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+      padding: 14px;
+      background: var(--bg-sidebar);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .avatar-preview {
+      width: 64px; height: 64px;
+      border-radius: var(--radius-md);
+      background: var(--accent-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .avatar-preview img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+
+    .avatar-upload-info { flex: 1; }
+
+    .avatar-upload-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+    }
+
+    .avatar-upload-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .avatar-upload-actions { display: flex; gap: 6px; }
+
+    .avatar-btn {
+      padding: 5px 10px;
+      font-size: 11px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-input);
+      background: var(--bg-panel);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .avatar-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    .avatar-btn-remove:hover { background: var(--red); border-color: var(--red); }
+
+    #avatarFileInput { display: none; }
+
+    /* ===== Progress Bar ===== */
+    .task-progress-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 2px;
+      background: transparent; z-index: 9999;
+      pointer-events: none; opacity: 0; transition: opacity 0.3s;
+    }
+    .task-progress-bar.visible { opacity: 1; }
+    .task-progress-fill {
+      height: 100%; width: 0%;
+      background: var(--accent);
+      transition: width 0.4s ease;
+    }
+
+    /* ===== Utilities ===== */
+    .hidden { display: none !important; }
+
+    .typing-indicator {
+      display: flex;
+      gap: 3px;
+      padding: 6px 0;
+    }
+
+    .typing-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+      30% { transform: translateY(-5px); opacity: 1; }
+    }
+
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      .sidebar { width: 56px; min-width: 56px; max-width: 56px; }
+      .logo-text, .logo-version, .nav-section,
+      .menu-item span:not(.menu-icon), .menu-badge, .sidebar-footer { display: none; }
+      .menu-item { justify-content: center; padding: 10px; }
+      .menu-icon { margin: 0; }
+      .edit-panel, .notes-drawer { width: 100%; right: -100%; }
+      .gc-sidebar { width: 160px; min-width: 160px; }
+    }
+  
+  /* ===== Apple Design System Override ===== */
+  :root {
+    --bg-main: #f5f5f7 !important;
+    --bg-sidebar: #ffffff !important;
+    --bg-card: rgba(255,255,255,0.8) !important;
+    --border-subtle: rgba(0,0,0,0.08) !important;
+    --text-primary: #1d1d1f !important;
+    --text-secondary: #6e6e73 !important;
+    --accent: #007AFF !important;
+    --accent-light: rgba(0,113,227,0.1) !important;
+    --radius-sm: 8px !important;
+    --radius-md: 12px !important;
+    --radius-lg: 18px !important;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04) !important;
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04) !important;
+  }
+
+  /* 深色模式：用同等优先级覆盖上面的浅色锁定（修复夜间看不见文字）*/
+  [data-theme="dark"] {
+    --bg-main: #1a1a1a !important;
+    --bg-sidebar: #252525 !important;
+    --bg-card: rgba(40,40,40,0.8) !important;
+    --border-subtle: rgba(255,255,255,0.1) !important;
+    --text-primary: #e8e8ea !important;
+    --text-secondary: #a0a0a5 !important;
+  }
+  
+  /* Sidebar - frosted glass */
+  .sidebar {
+    background: rgba(255,255,255,0.85) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border-right: 1px solid rgba(0,0,0,0.08) !important;
+  }
+  
+  /* Menu items - Apple style */
+  .menu-item {
+    border-radius: 10px !important;
+    padding: 9px 12px !important;
+    margin: 2px 8px !important;
+    transition: all 0.15s ease !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #1d1d1f !important;
+    letter-spacing: -0.01em !important;
+  }
+  .menu-item:hover {
+    background: rgba(0,0,0,0.05) !important;
+  }
+  .menu-item.active {
+    background: rgba(0,113,227,0.1) !important;
+    color: #007AFF !important;
+  }
+  
+  /* Messages area */
+  #messages, .messages-container {
+    padding: 20px 24px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Message bubbles - iMessage style */
+  .message {
+    width: fit-content !important;
+    max-width: 75% !important;
+  }
+  .message.user {
+    margin-left: auto !important;
+    flex-direction: row-reverse !important;
+  }
+  .message.user .message-bubble {
+    background: #007AFF !important;
+    color: white !important;
+    border-radius: 18px 18px 4px 18px !important;
+    box-shadow: 0 2px 8px rgba(0,113,227,0.3) !important;
+  }
+  .message.assistant .message-bubble {
+    background: white !important;
+    color: #1d1d1f !important;
+    border-radius: 18px 18px 18px 4px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+    border: 1px solid rgba(0,0,0,0.06) !important;
+  }
+  .message-bubble {
+    padding: 11px 16px !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    letter-spacing: -0.01em !important;
+  }
+  
+  /* Avatar */
+  .message-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    overflow: hidden !important;
+  }
+  
+  /* Input area */
+  .input-area, .chat-input-container {
+    padding: 12px 16px !important;
+    background: rgba(255,255,255,0.9) !important;
+    backdrop-filter: blur(20px) !important;
+    border-top: 1px solid rgba(0,0,0,0.06) !important;
+  }
+  #input, .chat-input {
+    border-radius: 22px !important;
+    border: 1.5px solid rgba(0,0,0,0.12) !important;
+    padding: 10px 18px !important;
+    font-size: 14px !important;
+    background: white !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+  }
+  #input:focus, .chat-input:focus {
+    border-color: #007AFF !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(0,113,227,0.15) !important;
+  }
+  
+  /* Send button */
+  #sendBtn, .send-btn {
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+    background: #007AFF !important;
+    border: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    box-shadow: 0 2px 8px rgba(0,113,227,0.3) !important;
+    flex-shrink: 0 !important;
+  }
+  #sendBtn:hover, .send-btn:hover {
+    background: #0077ed !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 4px 12px rgba(0,113,227,0.4) !important;
+  }
+  
+  /* Header */
+  .main-header, .header {
+    background: rgba(255,255,255,0.85) !important;
+    backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid rgba(0,0,0,0.06) !important;
+    padding: 0 20px !important;
+    height: 52px !important;
+  }
+  
+  /* Cards */
+  .agent-card, .skill-card {
+    border-radius: 14px !important;
+    border: 1px solid rgba(0,0,0,0.06) !important;
+    background: white !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+    transition: all 0.2s ease !important;
+  }
+  .agent-card:hover, .skill-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+  }
+  
+  /* Buttons */
+  button, .btn {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif !important;
+    letter-spacing: -0.01em !important;
+  }
+  
+  /* Scrollbar - macOS style */
+  ::-webkit-scrollbar { width: 6px !important; height: 6px !important; }
+  ::-webkit-scrollbar-track { background: transparent !important; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15) !important; border-radius: 3px !important; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25) !important; }
+  
+  /* Session panel */
+  .session-list-item {
+    border-radius: 10px !important;
+    padding: 10px 14px !important;
+    margin: 3px 0 !important;
+    cursor: pointer !important;
+    transition: background 0.15s ease !important;
+  }
+  .session-list-item:hover {
+    background: rgba(0,0,0,0.04) !important;
+  }
+  .session-list-item.active {
+    background: rgba(0,113,227,0.08) !important;
+  }
+  
+  /* Typing indicator */
+  .typing-indicator span {
+    background: #007AFF !important;
+  }
+  
+  /* Toast/notification */
+  .toast {
+    border-radius: 12px !important;
+    backdrop-filter: blur(20px) !important;
+    background: rgba(30,30,30,0.85) !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
+  }
+  /* ===== End Apple Design ===== */
+
+
+    /* ===== APPLE DESIGN UPGRADE ===== */
+    :root {
+      --sidebar-width: 220px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --shadow-float: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    /* Sidebar - frosted glass effect */
+    .sidebar {
+      background: rgba(248,248,248,0.92) !important;
+      backdrop-filter: blur(20px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+      border-right: 1px solid rgba(0,0,0,0.08) !important;
+      box-shadow: 1px 0 0 rgba(255,255,255,0.8) inset !important;
+    }
+
+    [data-theme="dark"] .sidebar {
+      background: rgba(28,28,30,0.95) !important;
+      border-right: 1px solid rgba(255,255,255,0.06) !important;
+    }
+
+    /* Sidebar logo area */
+    .sidebar-logo {
+      padding: 20px 16px 12px !important;
+    }
+
+    .logo-text {
+      font-size: 17px !important;
+      font-weight: 700 !important;
+      letter-spacing: -0.3px !important;
+      background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+    }
+
+    /* Menu items - pill style */
+    .menu-item {
+      border-radius: 10px !important;
+      margin: 1px 8px !important;
+      padding: 9px 12px !important;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      transition: all 0.15s ease !important;
+    }
+
+    .menu-item:hover {
+      background: rgba(0,0,0,0.05) !important;
+      transform: none !important;
+    }
+
+    .menu-item.active {
+      background: rgba(0,122,255,0.12) !important;
+      color: #007AFF !important;
+    }
+
+    [data-theme="dark"] .menu-item.active {
+      background: rgba(10,132,255,0.18) !important;
+      color: #0A84FF !important;
+    }
+
+    /* Header - clean minimal */
+    .header {
+      background: rgba(255,255,255,0.85) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      border-bottom: 1px solid rgba(0,0,0,0.07) !important;
+      height: 52px !important;
+    }
+
+    [data-theme="dark"] .header {
+      background: rgba(28,28,30,0.9) !important;
+      border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+    }
+
+    /* Chat messages area */
+    .messages-container, #messages {
+      padding: 20px 24px !important;
+    }
+
+    /* Message bubbles - Apple iMessage style */
+    .message {
+      margin-bottom: 6px !important;
+      align-items: flex-end !important;
+    }
+
+    .message-bubble {
+      border-radius: 18px !important;
+      padding: 10px 16px !important;
+      font-size: 14px !important;
+      line-height: 1.5 !important;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06) !important;
+      max-width: 480px !important;
+    }
+
+    /* User bubble - blue gradient */
+    .message.user .message-bubble {
+      background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%) !important;
+      color: white !important;
+      border-radius: 18px 18px 4px 18px !important;
+      border: none !important;
+    }
+
+    /* Assistant bubble - soft grey */
+    .message.assistant .message-bubble {
+      background: var(--bg-sidebar) !important;
+      border: 1px solid var(--border-subtle) !important;
+      border-radius: 18px 18px 18px 4px !important;
+      color: var(--text-primary) !important;
+    }
+
+    [data-theme="dark"] .message.assistant .message-bubble {
+      background: #2C2C2E !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+    }
+
+    /* Avatar */
+    .message-avatar {
+      width: 32px !important;
+      height: 32px !important;
+      min-width: 32px !important;
+      border-radius: 50% !important;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
+    }
+
+    /* Input area - modern card */
+    .input-area, .input-container {
+      padding: 12px 16px !important;
+      background: rgba(255,255,255,0.9) !important;
+      backdrop-filter: blur(20px) !important;
+      border-top: 1px solid rgba(0,0,0,0.07) !important;
+    }
+
+    [data-theme="dark"] .input-area, [data-theme="dark"] .input-container {
+      background: rgba(28,28,30,0.92) !important;
+      border-top: 1px solid rgba(255,255,255,0.06) !important;
+    }
+
+    /* Input box */
+    #input, .chat-input {
+      border-radius: 22px !important;
+      padding: 10px 18px !important;
+      font-size: 14px !important;
+      background: var(--bg-input) !important;
+      border: 1.5px solid transparent !important;
+      transition: border-color 0.15s, box-shadow 0.15s !important;
+    }
+
+    #input:focus, .chat-input:focus {
+      border-color: rgba(0,122,255,0.4) !important;
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.1) !important;
+      outline: none !important;
+    }
+
+    /* Send button */
+    #sendBtn, .send-btn {
+      width: 36px !important;
+      height: 36px !important;
+      border-radius: 50% !important;
+      background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%) !important;
+      border: none !important;
+      box-shadow: 0 2px 8px rgba(0,122,255,0.35) !important;
+      transition: transform 0.12s, box-shadow 0.12s !important;
+    }
+
+    #sendBtn:hover, .send-btn:hover {
+      transform: scale(1.05) !important;
+      box-shadow: 0 4px 12px rgba(0,122,255,0.45) !important;
+    }
+
+    #sendBtn:active, .send-btn:active {
+      transform: scale(0.95) !important;
+    }
+
+    /* Agent cards */
+    .agent-card {
+      border-radius: 14px !important;
+      border: 1px solid var(--border-subtle) !important;
+      transition: transform 0.15s, box-shadow 0.15s !important;
+      overflow: hidden !important;
+    }
+
+    .agent-card:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: var(--shadow-float) !important;
+      border-color: rgba(0,122,255,0.2) !important;
+    }
+
+    /* Buttons - pill style */
+    .btn, button.primary {
+      border-radius: 10px !important;
+      font-weight: 600 !important;
+      font-size: 13px !important;
+      transition: all 0.15s !important;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%) !important;
+      box-shadow: 0 2px 8px rgba(0,122,255,0.3) !important;
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 4px 14px rgba(0,122,255,0.4) !important;
+      transform: translateY(-1px) !important;
+    }
+
+    /* Scrollbar - macOS style */
+    ::-webkit-scrollbar { width: 6px !important; height: 6px !important; }
+    ::-webkit-scrollbar-track { background: transparent !important; }
+    ::-webkit-scrollbar-thumb { 
+      background: rgba(0,0,0,0.15) !important; 
+      border-radius: 10px !important;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25) !important; }
+
+    /* Page transitions */
+    .page { animation: pageIn 0.2s ease !important; }
+    @keyframes pageIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Toast notifications */
+    .toast {
+      border-radius: 12px !important;
+      backdrop-filter: blur(20px) !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important;
+      font-size: 13px !important;
+    }
+
+    /* Code blocks */
+    pre, code {
+      border-radius: 10px !important;
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace !important;
+    }
+
+    /* Section headers */
+    .section-title, .nav-section-title {
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.5px !important;
+      text-transform: uppercase !important;
+      opacity: 0.5 !important;
+    }
+    /* ===== END APPLE DESIGN ===== */
+
+    
+    /* === 消息气泡宽度修复 === */
+    #messages { width: 100% !important; display: flex !important; flex-direction: column !important; }
+
+    
+    /* bubble-align-fix */
+    .messages-container { width: 100%; }
+    .message { width: 100%; box-sizing: border-box; }
+    .message.user { justify-content: flex-end; }
+    .message.user .message-bubble { background: #E8E8ED; color: #1D1D1F; border-top-right-radius: 3px; border-top-left-radius: var(--radius-md); border-bottom-right-radius: 18px; border-bottom-left-radius: 18px; }
+    /* Markdown in user bubbles — ensure all text is readable */
+    .message.user .message-bubble code { background: rgba(0,0,0,0.08); color: #D63384; }
+    .message.user .message-bubble pre { background: #1E1E1E; color: #D4D4D4; }
+    .message.user .message-bubble pre code { background: transparent; color: #D4D4D4; }
+    .message.user .message-bubble a { color: #007AFF; }
+    .message.user .message-bubble blockquote { border-left-color: rgba(0,0,0,0.2); color: #555; }
+    .message.user .message-bubble table th, .message.user .message-bubble table td { border-color: rgba(0,0,0,0.1); }
+    .message.user .message-bubble h1, .message.user .message-bubble h2, .message.user .message-bubble h3,
+    .message.user .message-bubble h4, .message.user .message-bubble h5, .message.user .message-bubble h6 { color: #1D1D1F; }
+    /* 暗色模式 */
+    [data-theme="dark"] .message.user .message-bubble { background: #2C2C2E; color: #F5F5F7; }
+    [data-theme="dark"] .message.user .message-bubble code { background: rgba(255,255,255,0.1); color: #FF6BA0; }
+    [data-theme="dark"] .message.user .message-bubble pre { background: #0D0D0D; }
+    [data-theme="dark"] .message.user .message-bubble a { color: #0A84FF; }
+    [data-theme="dark"] .message.user .message-bubble blockquote { border-left-color: rgba(255,255,255,0.2); color: #AAA; }
+    [data-theme="dark"] .message.user .message-bubble h1, [data-theme="dark"] .message.user .message-bubble h2,
+    [data-theme="dark"] .message.user .message-bubble h3, [data-theme="dark"] .message.user .message-bubble h4,
+    [data-theme="dark"] .message.user .message-bubble h5, [data-theme="dark"] .message.user .message-bubble h6 { color: #F5F5F7; }
+    .message.assistant .message-bubble { background: var(--bg-sidebar); border: 1px solid var(--border-subtle); border-top-left-radius: 3px; }
+
+  
+    /* apple-premium-ui */
+    body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif !important; }
+    
+    /* Sidebar polish */
+    .sidebar { background: rgba(248,248,250,0.95) !important; backdrop-filter: blur(20px) !important; border-right: 1px solid rgba(0,0,0,0.08) !important; }
+    [data-theme="dark"] .sidebar { background: rgba(28,28,30,0.95) !important; }
+    
+    /* Menu items */
+    .menu-item { border-radius: 10px !important; margin: 1px 8px !important; padding: 8px 10px !important; transition: all 0.15s ease !important; }
+    .menu-item:hover { background: rgba(0,0,0,0.06) !important; }
+    .menu-item.active { background: rgba(0,122,255,0.12) !important; color: #007AFF !important; }
+    [data-theme="dark"] .menu-item.active { background: rgba(10,132,255,0.2) !important; color: #0A84FF !important; }
+    
+    /* Chat bubbles - premium look */
+    
+    /* Input area */
+    
+    /* Send button */
+    
+    /* Header */
+    .header { background: rgba(255,255,255,0.85) !important; backdrop-filter: blur(20px) !important; border-bottom: 1px solid rgba(0,0,0,0.06) !important; }
+    [data-theme="dark"] .header { background: rgba(28,28,30,0.85) !important; }
+    
+    /* Agent cards */
+    .agent-card { border-radius: 16px !important; border: 1px solid rgba(0,0,0,0.08) !important; transition: all 0.2s ease !important; }
+    .agent-card:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important; }
+    
+    /* Message avatar */
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 6px !important; }
+    ::-webkit-scrollbar-track { background: transparent !important; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2) !important; border-radius: 3px !important; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3) !important; }
+  
+  
+/* === 聊天气泡样式 - iMessage 风格（添加于 2026-06-06T23:14:00.892Z）=== */
+.messages-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.message {
+  display: flex;
+  gap: 10px;
+  max-width: 75%;
+  align-items: flex-start;
+}
+
+.message.user {
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+.message.assistant {
+  margin-right: auto;
+}
+
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.message-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.message-bubble {
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.message.user .message-bubble {
+  background: linear-gradient(135deg, #007AFF, #0051D5);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.message.assistant .message-bubble {
+  background: #f0f0f0;
+  border: 1px solid #e0e0e0;
+  border-bottom-left-radius: 4px;
+  color: #1a1a1a;
+}
+
+[data-theme="dark"] .message.assistant .message-bubble {
+  background: #2a2a2a;
+  border-color: #404040;
+  color: #e0e0e0;
+}
+
+
+/* ============================================================
+   统一聊天界面样式 - Apple Design (重构于 2026-06-07T10:47:54.809Z)
+   单一来源，无 !important 冲突
+   ============================================================ */
+
+/* —— 消息列表容器 —— */
+.messages-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 20px;
+  overflow-y: auto;
+}
+
+/* —— 单条消息：头像与气泡水平紧贴 —— */
+.message {
+  display: flex;
+  gap: 8px;
+  max-width: 76%;
+  align-items: flex-start;
+  width: auto;
+}
+.message.user { margin-left: auto; flex-direction: row-reverse; }
+.message.assistant { margin-right: auto; }
+
+/* —— 头像 —— */
+.message-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--accent, #007AFF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+}
+.message-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* —— 气泡 —— */
+.message-bubble {
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.55;
+  word-break: break-word;
+  white-space: pre-wrap;
+  max-width: 100%;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+}
+.message.user .message-bubble {
+  background: linear-gradient(135deg, #0A84FF, #0051D5);
+  color: #fff;
+  border-bottom-right-radius: 5px;
+}
+.message.assistant .message-bubble {
+  background: #f0f0f2;
+  color: #1a1a1a;
+  border-bottom-left-radius: 5px;
+}
+[data-theme="dark"] .message.assistant .message-bubble {
+  background: #2c2c2e;
+  color: #e8e8ea;
+}
+
+/* —— 时间戳 —— */
+.message-time {
+  font-size: 11px;
+  color: var(--text-placeholder, #999);
+  margin-top: 2px;
+}
+.message.user .message-time { text-align: right; }
+
+/* ============================================================
+   统一输入框样式 - 单层圆角胶囊（消除"椭圆套方框"）
+   ============================================================ */
+.input-area {
+  padding: 12px 20px 20px;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* input-wrapper 作为唯一的视觉边框容器 */
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-input, #fff);
+  border: 1.5px solid var(--border-input, rgba(0,0,0,0.12));
+  border-radius: 20px;
+  padding: 4px 6px 4px 4px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input-wrapper:focus-within {
+  border-color: #0A84FF;
+  box-shadow: 0 0 0 3px rgba(10,132,255,0.15);
+}
+
+/* textarea 完全透明、无边框、无独立圆角 —— 不再是"椭圆" */
+#input, #gc-input {
+  width: 100%;
+  padding: 9px 12px 4px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  min-height: 40px;
+  max-height: 160px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+#input::placeholder, #gc-input::placeholder { color: var(--text-placeholder, #999); }
+
+/* 工具栏 */
+.input-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 6px 4px;
+}
+
+/* 发送按钮 - 圆形 */
+#sendBtn, .send-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #0A84FF;
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+#sendBtn:hover, .send-btn:hover { background: #0070e0; }
+#sendBtn:active, .send-btn:active { transform: scale(0.92); }
+
+/* 附件/停止按钮 */
+.attach-btn, .stop-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #888);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.attach-btn:hover, .stop-btn:hover { background: var(--bg-hover, rgba(0,0,0,0.05)); }
+
+/* ============================================================
+   FINAL AUTHORITATIVE OVERRIDE - 必须放在最后，用 !important 压制所有历史遗留块
+   修复：①输入框椭圆套方框 ②夜间模式看不见 ③气泡样式
+   ============================================================ */
+
+/* —— 输入框：唯一边框在 wrapper，textarea 透明 —— */
+/* input-area 仅作透明容器，不再是第二层框（消除框中框） */
+.input-area, .chat-input-container {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  padding: 8px 16px 14px !important;
+}
+.input-wrapper {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border-input, rgba(0,0,0,0.1)) !important;
+  border-radius: 24px !important;
+  box-shadow: none !important;
+  padding: 2px 4px 2px 4px !important;
+  outline: none !important;
+}
+.input-wrapper:focus-within {
+  border-color: rgba(0,0,0,0.18) !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .input-wrapper:focus-within {
+  border-color: rgba(255,255,255,0.22) !important;
+}
+#input, #gc-input, .chat-input {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 10px 14px 6px !important;
+  color: var(--text-primary) !important;
+  resize: none !important;
+}
+/* 隐藏对话页可能残留的空蓝条元素 */
+.input-area > .agent-indicator:not(.visible),
+.input-area > .attach-preview.empty { display: none !important; }
+
+/* —— 消息气泡 —— */
+.message { align-items: flex-start !important; }
+.message.user .message-bubble {
+  background: linear-gradient(135deg, #0A84FF, #0051D5) !important;
+  color: #fff !important;
+  border-radius: 18px 18px 5px 18px !important;
+  border: none !important;
+}
+.message.assistant .message-bubble {
+  background: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border-radius: 18px 18px 18px 5px !important;
+  border: 1px solid var(--border-subtle, rgba(0,0,0,0.06)) !important;
+}
+
+/* —— 夜间模式全局修复：用变量而非硬编码色 —— */
+[data-theme="dark"] body,
+[data-theme="dark"] .main-content,
+[data-theme="dark"] .chat-area,
+[data-theme="dark"] #messages,
+[data-theme="dark"] .messages-container {
+  background: var(--bg-main, #1a1a1a) !important;
+  color: var(--text-primary, #e8e8ea) !important;
+}
+[data-theme="dark"] .sidebar { background: rgba(28,28,30,0.95) !important; }
+[data-theme="dark"] .menu-item { color: var(--text-primary, #e8e8ea) !important; }
+[data-theme="dark"] .menu-item:hover { background: rgba(255,255,255,0.06) !important; }
+[data-theme="dark"] .main-header,
+[data-theme="dark"] .header {
+  background: rgba(28,28,30,0.85) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+  color: var(--text-primary, #e8e8ea) !important;
+}
+[data-theme="dark"] .input-area,
+[data-theme="dark"] .chat-input-container {
+  background: rgba(28,28,30,0.9) !important;
+  border-top: 1px solid rgba(255,255,255,0.08) !important;
+}
+[data-theme="dark"] .input-wrapper {
+  background: #2a2a2c !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+[data-theme="dark"] #input,
+[data-theme="dark"] #gc-input,
+[data-theme="dark"] .chat-input { color: #e8e8ea !important; }
+[data-theme="dark"] .agent-card,
+[data-theme="dark"] .skill-card,
+[data-theme="dark"] .session-card {
+  background: #252527 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  color: var(--text-primary, #e8e8ea) !important;
+}
+[data-theme="dark"] .session-card-title { color: #e8e8ea !important; }
+[data-theme="dark"] .session-card-preview { color: #a0a0a5 !important; }
+[data-theme="dark"] .message.assistant .message-bubble {
+  background: #2c2c2e !important;
+  color: #e8e8ea !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+/* ============================================================
+   FINAL INPUT FIX (2026-06-08) — 必须放在 style 最末尾
+   消除输入框内部多余的横线/方框，发送按钮归位到工具栏行内
+   ============================================================ */
+.input-area { padding: 8px 16px 14px !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.input-wrapper {
+  display: flex !important; flex-direction: column !important;
+  background: var(--bg-input, #fff) !important;
+  border: 1px solid var(--border-input, rgba(0,0,0,0.12)) !important;
+  border-radius: 22px !important;
+  box-shadow: none !important; outline: none !important;
+  padding: 4px 6px 4px 6px !important; gap: 0 !important;
+}
+.input-wrapper:focus-within { border-color: rgba(0,0,0,0.2) !important; box-shadow: none !important; }
+[data-theme="dark"] .input-wrapper { background: #2a2a2c !important; border-color: rgba(255,255,255,0.14) !important; }
+[data-theme="dark"] .input-wrapper:focus-within { border-color: rgba(255,255,255,0.26) !important; }
+#input, #gc-input {
+  background: transparent !important; border: none !important; border-top: none !important; border-bottom: none !important;
+  border-radius: 0 !important; box-shadow: none !important; outline: none !important;
+  padding: 8px 12px 4px !important; margin: 0 !important;
+}
+/* textarea 自身的 focus 不再画蓝框/蓝光（边框只由 wrapper 承担） */
+#input:focus, #gc-input:focus, #input:focus-visible, #gc-input:focus-visible, .chat-input:focus {
+  border: none !important; box-shadow: none !important; outline: none !important; background: transparent !important;
+}
+/* 工具栏：无边框、无背景、无分隔线；发送按钮在行内右侧 */
+.input-toolbar {
+  display: flex !important; align-items: center !important; justify-content: space-between !important;
+  background: transparent !important; border: none !important; border-top: none !important;
+  box-shadow: none !important; padding: 0 4px 2px !important; margin: 0 !important; position: static !important;
+}
+.input-toolbar-left, .input-toolbar-right { display: flex !important; align-items: center !important; gap: 4px !important; background: transparent !important; border: none !important; position: static !important; }
+#sendBtn, .send-btn { position: static !important; width: 32px !important; height: 32px !important; margin: 0 !important; box-shadow: none !important; }
+/* 隐藏对话页残留的空蓝条/空预览（避免出现细横线） */
+.input-area > .agent-indicator:not(.visible),
+.input-area > .attach-preview.empty,
+.input-area > #attachPreview:empty,
+.input-area > #gc-attach-preview:empty { display: none !important; border: none !important; }
+
+/* 会话卡片"更多"菜单项 */
+.session-menu-item {
+  padding: 9px 14px; font-size: 13px; color: var(--text-primary);
+  cursor: pointer; white-space: nowrap; transition: background 0.12s;
+}
+.session-menu-item:hover { background: var(--bg-hover, rgba(0,0,0,0.05)); }
+.session-menu-danger { color: #ef4444; }
+[data-theme="dark"] .session-menu { background: #252527 !important; border-color: rgba(255,255,255,0.1) !important; }
+
+</style>
+
+
+</head>
+<body>
+  <div id="app">
+    <!-- ===== Sidebar ===== -->
+    <div class="sidebar">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+            <defs>
+              <linearGradient id="logoGrad1" x1="4" y1="4" x2="28" y2="28"><stop stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0.9"/></linearGradient>
+              <linearGradient id="logoGrad2" x1="8" y1="8" x2="24" y2="24"><stop stop-color="var(--accent)"/><stop offset="1" stop-color="#a855f7"/></linearGradient>
+            </defs>
+            <rect x="4" y="4" width="24" height="24" rx="7" fill="url(#logoGrad1)" opacity="0.95"/>
+            <polygon points="16,7 24,16 16,25 8,16" fill="url(#logoGrad2)" opacity="0.85"/>
+            <polygon points="16,10 21,16 16,22 11,16" fill="url(#logoGrad1)" opacity="0.9"/>
+            <circle cx="16" cy="16" r="2" fill="url(#logoGrad2)"/>
+          </svg>
+        </div>
+        <div>
+          <div class="logo-text">灵动AI</div>
+          <div class="logo-version">by Li · v1.0.0</div>
+        </div>
+      </div>
+
+      <div class="nav-section">主要功能</div>
+      <div class="menu">
+        <div class="menu-item" :class="{ active: currentPage === 'chat' }" data-page="chat" @click="navigateTo('chat')">
+          <span class="menu-icon" v-html="icons.chat"></span>
+          <span>对话</span>
+          <button id="newChatBtn" onclick="event.stopPropagation(); window.newChat()" title="新建会话" style="margin-left:auto;width:22px;height:22px;border-radius:6px;border:none;background:var(--accent);color:white;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s ease;box-shadow:0 1px 4px rgba(0,122,255,0.2);flex-shrink:0;">+</button>
+        </div>
+        <div class="menu-item" :class="{ active: currentPage === 'agent' }" data-page="agent" @click="navigateTo('agent')">
+          <span class="menu-icon" v-html="icons.agent"></span>
+          <span>Agent</span>
+          <span class="menu-badge" id="agentBadge">0</span>
+        </div>
+        <div class="menu-item" :class="{ active: currentPage === 'skills' }" data-page="skills" @click="navigateTo('skills')">
+          <span class="menu-icon" v-html="icons.skills"></span>
+          <span>Skills</span>
+        </div>
+      </div>
+
+      
+      <div class="nav-section">会话记忆</div>
+      <div class="menu">
+        <div class="menu-item" :class="{ active: currentPage === 'sessions' }" data-page="sessions" @click="navigateTo('sessions')">
+          <span class="menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+          <span>会话</span>
+          <span class="menu-badge" id="sessionsBadge" style="display:none">0</span>
+        </div>
+      </div>
+
+      <div class="nav-section">群聊</div>
+      <div class="menu-item" :class="{ active: currentPage === 'groupchat' }" data-page="groupchat" @click="navigateTo('groupchat')" style="opacity:0.6;font-size:12px;color:var(--text-muted);">
+        <span class="menu-icon" v-html="icons.groupchat"></span>
+        <span>群聊</span>
+      </div>
+      <div class="group-chat-list-container" id="groupChatListContainer"></div>
+
+      <div class="nav-section">系统</div>
+      <div class="menu">
+        <div class="menu-item" :class="{ active: currentPage === 'settings' }" data-page="settings" @click="navigateTo('settings')">
+          <span class="menu-icon" v-html="icons.settings"></span>
+          <span>模型配置</span>
+        </div>
+        <div class="menu-item" :class="{ active: currentPage === 'stats' }" data-page="stats" @click="navigateTo('stats')">
+          <span class="menu-icon" v-html="icons.stats"></span>
+          <span>使用统计</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="pet-toggle-btn" id="petToggleBtn" onclick="window.togglePetWindow && window.togglePetWindow()" title="切换桌宠" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;font-size:13px;color:var(--text-muted);transition:background 0.2s;margin-bottom:6px;" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background=''">
+          <span style="font-size:18px;">😊</span>
+          <span>桌面宠物</span>
+        </div>
+
+        <div class="status-indicator">
+          <div class="status-dot"></div>
+          <span>AI 服务已连接</span>
+        </div>
+      </div>
+    </div>
+
+    
+    <!-- ===== Sessions Page ===== -->
+    <!-- ===== Main Panel ===== -->
+    <div class="main">
+      <div class="header">
+        <div class="header-title">
+          <span class="header-title-icon" id="headerIcon" v-html="headerIconSvg"></span>
+          <span id="pageTitle">{{ pageTitle }}</span>
+        </div>
+        <div class="header-actions">
+          <button class="header-btn" title="切换主题" @click="toggleTheme" id="themeBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          <button class="header-btn" title="添加群聊" onclick="showGroupChatModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </button>
+          <button class="header-btn" title="设置" @click="navigateTo('settings')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- ===== Chat Page ===== -->
+        <div id="page-chat" class="page" :class="{ 'is-hidden': currentPage !== 'chat' }">
+          <div class="messages-container" id="messages"></div>
+
+          <div id="meetingToolbar" class="meeting-toolbar hidden">
+            <div class="meeting-header">
+              <div class="meeting-status">
+                <span class="meeting-status-icon" id="meetingStatusIcon">🎤</span>
+                <span class="meeting-status-text" id="meetingStatus">准备开始</span>
+              </div>
+              <div class="meeting-timer" id="meetingTimer">00:00</div>
+              <div class="meeting-buttons">
+                <button id="meetingCloseBtn" class="btn-meeting" style="background:#9b9b9b;">✕ 关闭</button>
+                <button id="meetingStartBtn" class="btn-meeting btn-meeting-start">🎤 开始录音</button>
+                <button id="meetingPauseBtn" class="btn-meeting btn-meeting-stop hidden">⏸ 暂停</button>
+                <button id="meetingResumeBtn" class="btn-meeting btn-meeting-start hidden">▶ 继续</button>
+                <button id="meetingStopBtn" class="btn-meeting btn-meeting-stop hidden">⏹ 停止</button>
+                <button id="meetingGenerateBtn" class="btn-meeting btn-meeting-start hidden">📝 生成会议纪要</button>
+              </div>
+            </div>
+            <div class="meeting-transcript" id="meetingTranscript">
+              <textarea id="manualTranscript" placeholder="您可以直接在这里输入会议内容，或点击「开始录音」使用语音识别..."></textarea>
+              <div id="speechStatus" style="font-size:12px;color:var(--text-muted);margin-top:8px;">语音识别状态：等待中...</div>
+            </div>
+            <div id="meetingResult" class="meeting-result hidden"></div>
+          </div>
+
+          <div id="progressBar" style="display:none;padding:0 20px 6px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="flex:1;height:3px;background:var(--bg-hover);border-radius:2px;overflow:hidden;">
+                <div id="progressFill" style="height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width 0.2s ease;"></div>
+              </div>
+              <span id="progressPct" style="font-size:11px;color:var(--text-muted);min-width:28px;text-align:right;">0%</span>
+            </div>
+          </div>
+
+          <div class="input-area">
+            <div id="agentIndicator" class="agent-indicator">
+              🤖 当前 Agent: <strong id="currentAgentName"></strong>
+              <button onclick="clearCurrentAgentManual()" style="margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">✕</button>
+            </div>
+            <div id="attachPreview" class="attach-preview empty"></div>
+            <div class="input-wrapper">
+              <textarea id="input" rows="1" placeholder="输入消息... (Shift+Enter 换行，Enter 发送)"></textarea>
+              <div class="input-toolbar">
+                <div class="input-toolbar-left">
+                  <button id="attachBtn" class="attach-btn" title="上传附件" onclick="triggerAttach()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                  </button>
+                  <input type="file" id="attachFileInput" multiple accept="image/*,text/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.json,.md,.txt" style="display:none" onchange="handleAttachSelect(event)">
+                </div>
+                <div class="input-toolbar-right">
+                  <button id="stopBtn" class="stop-btn" style="display:none" title="停止所有执行" onclick="stopGeneration()">⏹</button>
+                  <button id="sendBtn" class="send-btn" onclick="window.sendMessage()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Agent Page ===== -->
+        <div id="page-agent" class="page" :class="{ 'is-hidden': currentPage !== 'agent' }">
+          <div class="list-page">
+            <div class="list-header">
+              <h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-4px;margin-right:6px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Agent 管理</h2>
+              <button class="btn btn-primary" onclick="showCreateAgentModal()">+ 新建 Agent</button>
+            </div>
+            <div class="card-grid" id="agentList"></div>
+          </div>
+        </div>
+
+        <!-- ===== Skills Page ===== -->
+        <div id="page-skills" class="page" :class="{ 'is-hidden': currentPage !== 'skills' }">
+          <div class="list-page">
+            <div class="list-header">
+              <h2>🛠 Skills 管理</h2>
+              <button class="btn btn-primary" onclick="showCreateSkillModal()">+ 新建 Skill</button>
+            </div>
+            <div class="card-grid" id="skillList"></div>
+          </div>
+        </div>
+
+        <!-- ===== Settings Page ===== -->
+        <div id="page-settings" class="page" :class="{ 'is-hidden': currentPage !== 'settings' }">
+          <div class="settings-page">
+            <div class="settings-card">
+              <h2>⚙️ 模型配置</h2>
+              <div class="form-group">
+                <label>提供商</label>
+                <select id="provider">
+                  <option value="dashscope">阿里云 (DashScope)</option>
+                  <option value="openai">OpenAI</option>
+                  <option value="anthropic">Anthropic</option>
+                  <option value="custom">自定义</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>API Key</label>
+                <input type="password" id="apiKey" placeholder="输入 API Key">
+              </div>
+              <div class="form-group">
+                <label>模型</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="text" id="model" placeholder="输入模型名称" style="flex:1;">
+                  <button class="btn btn-secondary" id="fetchModelsBtn" style="padding:8px 12px;font-size:12px;white-space:nowrap;" onclick="fetchAvailableModels()">📋 获取模型</button>
+                </div>
+                <select id="modelSelect" style="width:100%;margin-top:8px;padding:8px 12px;background:var(--bg-panel);border:1px solid var(--border-input);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;display:none;" onchange="if(this.value){document.getElementById('model').value=this.value;}"><option value="">-- 选择模型 --</option></select>
+                <div id="modelsStatus" style="font-size:12px;color:var(--text-muted);margin-top:4px;"></div>
+              </div>
+              <div class="form-group">
+                <label>Base URL</label>
+                <input type="text" id="baseUrl" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1">
+              </div>
+              <div class="form-group">
+                <label>上下文记忆条数 <span style="font-weight:400;color:var(--text-muted);font-size:12px;">(每次对话携带的历史消息数，默认 20)</span></label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="number" id="contextLimit" min="2" max="200" step="1" placeholder="20" style="flex:1;">
+                  <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">条</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>群聊上下文记忆窗口 <span style="font-weight:400;color:var(--text-muted);font-size:12px;">(群聊中每个 Agent 回复时携带的历史消息数，默认 30)</span></label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="number" id="groupContextLimit" min="2" max="200" step="1" placeholder="30" style="flex:1;">
+                  <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">条</span>
+                </div>
+              </div>
+              <div class="btn-row">
+                <button class="btn btn-primary" id="testBtn" onclick="window.testConnection()">🔗 测试连接</button>
+                <button class="btn btn-secondary" id="saveBtn" onclick="window.saveSettings()">💾 保存配置</button>
+              </div>
+              <div id="testStatus" class="status-text hidden"></div>
+              <div id="saveStatus" class="status-text hidden"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Stats Page ===== -->
+        <div id="page-stats" class="page" :class="{ 'is-hidden': currentPage !== 'stats' }">
+          <div class="stats-page">
+            <h2>📊 使用统计</h2>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-value" id="chatCount">0</div>
+                <div class="stat-label">对话次数</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="promptTokenCount">0</div>
+                <div class="stat-label">输入 Token</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="completionTokenCount">0</div>
+                <div class="stat-label">输出 Token</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="cacheTokenCount">0</div>
+                <div class="stat-label">缓存 Token</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="tokenCount">0</div>
+                <div class="stat-label">Token 总计</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="agentCount">0</div>
+                <div class="stat-label">Agent 数量</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="skillCount">0</div>
+                <div class="stat-label">Skill 数量</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Group Chat Page ===== -->
+        <div id="page-groupchat" class="page" :class="{ 'is-hidden': currentPage !== 'groupchat' }">
+          <div style="height:100%;display:flex;flex-direction:column;">
+            <div id="gc-empty-state" class="gc-empty">
+              <div style="text-align:center;">
+                <div style="font-size:40px;margin-bottom:12px;opacity:0.4;"></div>
+                <div>选择一个群聊开始对话</div>
+                <div style="font-size:12px;margin-top:6px;opacity:0.6;">或点击左上角 + 创建新群聊</div>
+              </div>
+            </div>
+            <div id="gc-active-panel" class="gc-active" style="display:none;flex:1;display:flex;flex-direction:column;overflow:hidden;">
+              <div class="gc-header">
+                <div>
+                  <div id="gc-header-name" style="font-size:14px;font-weight:600;"></div>
+                  <div id="gc-header-members" style="font-size:11px;color:var(--text-muted);"></div>
+                </div>
+                <div style="display:flex;gap:4px;">
+                  <button class="header-btn" title="退出群聊" onclick="exitGroupChat()" style="width:28px;height:28px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  </button>
+                  <button class="header-btn" title="删除群聊" onclick="deleteCurrentGroupChat()" style="width:28px;height:28px;color:var(--red);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div id="gc-messages" class="gc-messages"></div>
+              <div class="input-area">
+              <div id="gc-attach-preview" class="attach-preview empty"></div>
+              <div class="input-wrapper">
+                <textarea id="gc-input" rows="1" placeholder="输入消息... (@Agent 指定回答)"></textarea>
+                <div class="input-toolbar">
+                  <div class="input-toolbar-left">
+                    <button class="attach-btn" title="上传附件" onclick="triggerGcAttach()">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                    </button>
+                    <input type="file" id="gcAttachInput" multiple accept="image/*,text/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.json,.md,.txt" style="display:none" onchange="handleGcAttach(this)">
+                  </div>
+                  <div class="input-toolbar-right">
+                    <button id="gcStopBtn" class="stop-btn" style="display:none" title="停止生成" onclick="gcStopGeneration()">■</button>
+                    <button id="gcSendBtn" class="send-btn" onclick="window.sendGroupMessageFromUI()">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+              </div>
+            </div>
+          </div>
+
+        <!-- 会话历史页面 -->
+        <div id="page-sessions" class="page" :class="{ 'is-hidden': currentPage !== 'sessions' }">
+          <div style="padding:24px;height:100%;display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <h2 style="font-size:20px;font-weight:700;color:var(--text-primary);margin:0;">会话历史</h2>
+              <button onclick="window.clearAllSessions && window.clearAllSessions()" style="background:var(--bg-hover);border:none;border-radius:8px;padding:6px 12px;font-size:12px;color:var(--text-muted);cursor:pointer;">清空全部</button>
+            </div>
+            <div id="sessionsList" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
+              <div style="text-align:center;color:var(--text-muted);padding:40px 0;font-size:14px;">暂无会话记录</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Fixed Overlays (outside #app for proper stacking) ===== -->
+
+  <!-- Edit Panel -->
+  <div class="edit-panel-overlay" id="editPanelOverlay" onclick="closeAgentEditPanel()"></div>
+  <div class="edit-panel" id="editPanel">
+    <div class="edit-panel-header">
+      <h3>✏️ <span id="editAgentTitle">编辑 Agent</span></h3>
+      <button class="edit-panel-close" onclick="closeAgentEditPanel()">✕</button>
+    </div>
+    <div class="edit-panel-body">
+      <div class="avatar-upload-section">
+        <div class="avatar-preview" id="avatarPreview">🤖</div>
+        <div class="avatar-upload-info">
+          <div class="avatar-upload-title">自定义头像</div>
+          <div class="avatar-upload-hint">支持 JPG、PNG、GIF，建议 200×200</div>
+          <div class="avatar-upload-actions">
+            <button class="avatar-btn" onclick="selectAvatarFile()">📁 选择图片</button>
+            <button class="avatar-btn avatar-btn-remove" onclick="removeAvatar()">🗑️ 移除</button>
+          </div>
+        </div>
+        <input type="file" id="avatarFileInput" accept="image/*" onchange="handleAvatarSelect(event)">
+      </div>
+      <div class="form-group">
+        <label>名称</label>
+        <input type="text" id="editAgentName">
+      </div>
+      <div class="form-group">
+        <label>描述</label>
+        <input type="text" id="editAgentDesc">
+      </div>
+      <div class="form-group">
+        <label>系统提示</label>
+        <textarea id="editAgentPrompt" rows="5" style="width:100%;padding:10px;background:var(--bg-input);border:1px solid var(--border-input);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:inherit;resize:vertical;outline:none;"></textarea>
+      </div>
+      <div class="notes-section">
+        <h4>⚙️ 模型配置（Agent 独立模型）</h4>
+        <div class="form-group">
+          <label>模型名称</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="text" id="editAgentModel" placeholder="qwen3.5-plus" style="flex:1;">
+            <button class="btn btn-secondary" onclick="fetchAgentModels()" style="padding:6px 10px;font-size:12px;white-space:nowrap;">📋 获取模型</button>
+          </div>
+          <select id="editAgentModelSelect" style="display:none;width:100%;margin-top:6px;padding:8px 10px;background:var(--bg-input);border:1px solid var(--border-input);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;cursor:pointer;"></select>
+          <div id="editAgentModelsStatus" class="status-text hidden" style="margin-top:4px;font-size:12px;"></div>
+        </div>
+        <div class="form-group">
+          <label>API Key</label>
+          <input type="password" id="editAgentApiKey" placeholder="输入该 Agent 专用的 API Key">
+        </div>
+        <div class="form-group">
+          <label>回调地址 (Base URL)</label>
+          <input type="text" id="editAgentBaseUrl" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1">
+        </div>
+        <div class="form-group">
+          <label>Temperature</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="number" id="editAgentTemp" step="0.1" min="0" max="2" value="0.7" style="width:100px;">
+            <button class="btn btn-secondary" onclick="fillDefaultModel()" style="padding:6px 10px;font-size:12px;white-space:nowrap;">⚡ 填入默认模型</button>
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:12px;">
+          <button class="btn btn-secondary" onclick="testAgentModel()" style="flex:1;">🔗 测试连接</button>
+        </div>
+        <div id="editAgentTestStatus" class="status-text hidden"></div>
+      </div>
+      <div class="notes-section" id="notesSection" style="display:none;">
+        <h4>📁 文件存储路径</h4>
+        <div class="dir-path-row">
+          <input type="text" id="notesDirPath" class="dir-path-input" readonly>
+          <button class="btn btn-secondary" onclick="changeNotesDir()" style="padding:8px 14px;font-size:12px;">📂 更改</button>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-secondary" onclick="openNotesFolder()" style="width:100%;">📂 查看历史纪要文件夹</button>
+        </div>
+      </div>
+      <div class="notes-section" id="knowledgeBaseSection" style="display:none;">
+        <h4>📚 知识库配置</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">配置知识库后，Agent 可以自动检索和引用知识库中的文件内容</p>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label style="font-size:12px;">知识库路径</label>
+          <div class="dir-path-row">
+            <input type="text" id="knowledgeBasePath" class="dir-path-input" placeholder="选择或输入知识库文件夹路径">
+            <button class="btn btn-secondary" onclick="selectKnowledgeBasePath()" style="padding:8px 14px;font-size:12px;">📂 选择</button>
+          </div>
+        </div>
+        <div id="knowledgeBaseStats" style="background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;">
+          <div style="font-size:12px;color:var(--text-muted);text-align:center;">请先设置知识库路径</div>
+        </div>
+        <div id="knowledgeBaseFiles" style="background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:12px;max-height:200px;overflow-y:auto;">
+          <div style="font-size:12px;color:var(--text-muted);text-align:center;">暂无知识库文件</div>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-secondary" onclick="refreshKnowledgeBaseFiles()" style="width:100%;font-size:12px;">🔄 刷新文件列表</button>
+        </div>
+        <div style="margin-top:12px;padding:10px;background:var(--accent-light);border:1px solid rgba(35,131,226,0.15);border-radius:var(--radius-sm);">
+          <div style="font-size:12px;color:var(--accent);font-weight:600;margin-bottom:6px;">💡 使用提示</div>
+          <ul style="font-size:11px;color:var(--text-muted);margin:0;padding-left:16px;line-height:1.6;">
+            <li>支持的文件格式：txt、json、csv、md、xlsx、docx、pdf</li>
+            <li>将报价表、产品目录等文件放入知识库文件夹</li>
+            <li>对话时 Agent 会自动检索知识库内容</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="edit-panel-footer">
+      <button class="btn btn-secondary" onclick="closeAgentEditPanel()">取消</button>
+      <button class="btn btn-primary" onclick="saveAgentEdit()">💾 保存修改</button>
+    </div>
+  </div>
+
+  <!-- Create Agent Modal -->
+  <div class="modal-overlay" id="createAgentModal">
+    <div class="modal">
+      <h3>🤖 创建新 Agent</h3>
+      <div class="form-group">
+        <label>名称</label>
+        <input type="text" id="newAgentName" placeholder="例如：会议纪要助手">
+      </div>
+      <div class="form-group">
+        <label>描述</label>
+        <input type="text" id="newAgentDesc" placeholder="简要描述这个 Agent 的用途">
+      </div>
+      <div class="form-group">
+        <label>系统提示</label>
+        <textarea id="newAgentPrompt" rows="4" style="width:100%;padding:10px;background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;font-family:inherit;resize:vertical;outline:none;" placeholder="这个 Agent 的系统提示词，定义它的行为"></textarea>
+      </div>
+      <div style="border-top:1px solid var(--border-subtle);margin:12px 0 8px;padding-top:12px;">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">⚙️ 模型配置（可选，留空则使用全局配置）</div>
+        <div class="form-group" style="margin-bottom:8px;">
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="text" id="newAgentModel" placeholder="留空则继承全局模型" style="flex:1;font-size:12px;">
+            <button class="btn btn-secondary" onclick="fillNewAgentDefaultModel()" style="padding:5px 8px;font-size:11px;white-space:nowrap;">⚡ 填入默认</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="newAgentApiKey" placeholder="API Key（可选）" style="flex:1;font-size:12px;">
+          <input type="text" id="newAgentBaseUrl" placeholder="Base URL（可选）" style="flex:1;font-size:12px;">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeCreateAgentModal()">取消</button>
+        <button class="btn btn-primary" onclick="createAgentManual()">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Skill Modal -->
+  <div class="modal-overlay" id="createSkillModal">
+    <div class="modal">
+      <h3>🛠 创建新 Skill</h3>
+      <div class="form-group">
+        <label>名称</label>
+        <input type="text" id="newSkillName" placeholder="例如：邮件写作">
+      </div>
+      <div class="form-group">
+        <label>描述</label>
+        <input type="text" id="newSkillDesc" placeholder="简要描述这个 Skill 的用途">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeCreateSkillModal()">取消</button>
+        <button class="btn btn-primary" onclick="createSkillManual()">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group Chat Modal -->
+  <div class="modal-overlay" id="groupChatModal">
+    <div class="modal">
+      <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-4px;margin-right:6px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>创建群聊</h3>
+      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px;">选择多个 Agent 创建群聊对话（可多选）</p>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">群聊名称</label>
+        <input id="groupChatName" placeholder="输入群聊名称（可选）" style="width:100%;padding:8px 12px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-primary);font-size:13px;box-sizing:border-box;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border-input)'">
+      </div>
+      <div id="groupChatSelected" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">已选: 无</div>
+      <div class="group-chat-list" id="groupChatList"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeGroupChatModal()">取消</button>
+        <button class="btn btn-primary" onclick="confirmCreateGroupChat()">创建群聊</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notes Drawer -->
+  <div class="notes-drawer-overlay" id="notesDrawerOverlay" onclick="closeNotesDrawer()"></div>
+  <div class="notes-drawer" id="notesDrawer">
+    <div class="notes-drawer-header">
+      <h3>📄 查看纪要</h3>
+      <button class="edit-panel-close" onclick="closeNotesDrawer()">✕</button>
+    </div>
+    <div class="notes-drawer-body">
+      <div class="notes-drawer-content" id="notesDrawerContent"></div>
+    </div>
+    <div class="notes-drawer-actions">
+      <button class="btn btn-secondary" onclick="closeNotesDrawer()">关闭</button>
+      <button class="btn btn-primary" onclick="copyNotesContent()">📋 复制内容</button>
+    </div>
+  </div>
+
+  <!-- Task Progress Bar -->
+  <div class="task-progress-bar" id="taskProgressBar">
+    <div class="task-progress-fill" id="taskProgressFill"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/index.min.js"></script>
+  <script src="renderer.js"></script>
+
+  <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    const app = createApp({
+      setup() {
+        const currentPage = ref('chat');
+        const isDark = ref(false);
+
+        const pageTitles = {
+          chat: '对话',
+          agent: 'Agent 管理',
+          skills: 'Skills 管理',
+          settings: '模型配置',
+          stats: '使用统计',
+          sessions: '会话记忆',
+          groupchat: '群聊'
+        };
+
+        const icons = {
+          chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+          agent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+          skills: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+          settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+          stats: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+          groupchat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+        };
+
+        const pageTitle = computed(() => pageTitles[currentPage.value] || '');
+        const headerIconSvg = computed(() => icons[currentPage.value] || icons.chat);
+
+        function navigateTo(page) {
+          currentPage.value = page;
+          // 🔧 [v1.3.5] 新建会话按钮在侧边栏"对话"菜单项旁，始终可见
+          if (page === 'agent' && typeof loadAgents === 'function') { setTimeout(loadAgents, 50); }
+          else if (page === 'settings' && typeof loadConfig === 'function') { setTimeout(loadConfig, 50); }
+          else if (page === 'sessions') { setTimeout(function(){ if(window.renderSessionsList) window.renderSessionsList(); }, 80); setTimeout(function(){ if(window.renderSessionsList) window.renderSessionsList(); }, 300); }
+          else if (page === 'stats' && typeof loadStats === 'function') { setTimeout(loadStats, 50); }
+          else if (page === 'skills' && typeof loadSkills === 'function') { setTimeout(loadSkills, 50); }
+        }
+
+        function toggleTheme() {
+          isDark.value = !isDark.value;
+          document.documentElement.setAttribute('data-theme', isDark.value ? 'dark' : '');
+          try { localStorage.setItem('lobster-theme', isDark.value ? 'dark' : 'light'); } catch(e) {}
+        }
+
+        onMounted(() => {
+          try {
+            const saved = localStorage.getItem('lobster-theme');
+            if (saved === 'dark') {
+              isDark.value = true;
+              document.documentElement.setAttribute('data-theme', 'dark');
+            }
+          } catch(e) {}
+
+          window._vueNavigateTo = navigateTo;
+          window._vueCurrentPage = currentPage;
+        });
+
+        return {
+          currentPage,
+          isDark,
+          pageTitle,
+          headerIconSvg,
+          icons,
+          navigateTo,
+          toggleTheme
+        };
+      }
+    });
+
+    app.mount('#app');
+  </script>
+</body>
+</html>

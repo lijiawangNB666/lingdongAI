@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>桌面宠物角色概念图 V2</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+  background: linear-gradient(135deg, #0f0c29, #1a1a3e, #24243e);
+  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; 
+  min-height: 100vh;
+  color: #fff;
+  overflow-x: hidden;
+}
+.page-title {
+  text-align: center;
+  padding: 40px 20px 10px;
+}
+.page-title h1 {
+  font-size: 32px;
+  background: linear-gradient(135deg, #43e97b, #38f9d7, #a8edea);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 6px;
+}
+.page-title p { color: #8899aa; font-size: 14px; }
+
+.row {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  padding: 30px 20px;
+  flex-wrap: wrap;
+}
+
+.card {
+  background: rgba(20, 25, 50, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  padding: 30px;
+  width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+.card h2 {
+  font-size: 18px;
+  color: #cde;
+  margin-bottom: 4px;
+}
+.card .sub {
+  font-size: 12px;
+  color: #778;
+  margin-bottom: 16px;
+}
+.stage {
+  background: linear-gradient(180deg, #1a2040 0%, #151830 50%, #1e2848 100%);
+  border-radius: 16px;
+  height: 320px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.stage::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 50px;
+  background: linear-gradient(180deg, transparent, rgba(30,40,72,0.8));
+}
+
+/* 小龙人动画 */
+.dragon-wrap {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 30px;
+  animation: dragonIdle 3s ease-in-out infinite;
+}
+@keyframes dragonIdle {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+/* 日系精灵动画 */
+.elf-wrap {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 30px;
+  animation: elfFloat 4s ease-in-out infinite;
+}
+@keyframes elfFloat {
+  0%, 100% { transform: translateY(0) rotate(-0.5deg); }
+  25% { transform: translateY(-6px) rotate(0.5deg); }
+  50% { transform: translateY(-14px) rotate(-0.5deg); }
+  75% { transform: translateY(-6px) rotate(0.5deg); }
+}
+
+.bubble {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255,255,255,0.95);
+  color: #333;
+  border-radius: 14px 14px 14px 4px;
+  padding: 10px 14px;
+  font-size: 12px;
+  max-width: 150px;
+  line-height: 1.5;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  z-index: 10;
+  animation: bubbleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes bubbleIn {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 表情行 */
+.exprs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.expr-item {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 8px 10px;
+  text-align: center;
+  min-width: 60px;
+}
+.expr-item .e { font-size: 20px; }
+.expr-item .l { font-size: 10px; color: #889; margin-top: 2px; }
+
+/* 标签 */
+.badges {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.badge {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+.badge.green { background: rgba(67,233,123,0.12); border-color: rgba(67,233,123,0.3); color: #43e97b; }
+.badge.purple { background: rgba(138,43,226,0.12); border-color: rgba(138,43,226,0.3); color: #a78bfa; }
+.badge.blue { background: rgba(56,189,248,0.12); border-color: rgba(56,189,248,0.3); color: #38bdf8; }
+.badge.gold { background: rgba(255,215,0,0.12); border-color: rgba(255,215,0,0.3); color: #ffd700; }
+
+.footer {
+  text-align: center;
+  padding: 10px 20px 40px;
+  color: #556;
+  font-size: 12px;
+}
+
+/* 色板展示 */
+.palette {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.swatch {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.15);
+  position: relative;
+}
+.swatch::after {
+  content: attr(data-label);
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: #889;
+  white-space: nowrap;
+}
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>🐉 灵动AI 桌面宠物 · 角色概念 V2</h1>
+  <p>陛下指定配色方案：绿色身体 + 白色脸和肚子</p>
+</div>
+
+<div class="row">
+  <!-- ===== 方案A: 绿色小龙人 ===== -->
+  <div class="card">
+    <h2>🐲 翠绿小龙人</h2>
+    <p class="sub">圆润可爱 · 绿身白脸 · 小龙角 · 胖嘟嘟</p>
+    
+    <div class="stage">
+      <div class="bubble">陛下好呀~ 🌿<br>今天想聊什么？</div>
+      
+      <div class="dragon-wrap">
+        <svg width="200" height="250" viewBox="0 0 200 250" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <!-- 身体绿色渐变 -->
+            <radialGradient id="bodyGreen" cx="50%" cy="40%" r="55%">
+              <stop offset="0%" stop-color="#66BB6A"/>
+              <stop offset="100%" stop-color="#388E3C"/>
+            </radialGradient>
+            <!-- 头绿色渐变 -->
+            <radialGradient id="headGreen" cx="45%" cy="35%" r="55%">
+              <stop offset="0%" stop-color="#81C784"/>
+              <stop offset="80%" stop-color="#4CAF50"/>
+              <stop offset="100%" stop-color="#388E3C"/>
+            </radialGradient>
+            <!-- 白色脸部渐变 -->
+            <radialGradient id="faceWhite" cx="50%" cy="40%" r="55%">
+              <stop offset="0%" stop-color="#FFFFFF"/>
+              <stop offset="100%" stop-color="#F5F5F0"/>
+            </radialGradient>
+            <!-- 白色肚皮渐变 -->
+            <radialGradient id="bellyWhite" cx="50%" cy="40%" r="55%">
+              <stop offset="0%" stop-color="#FFFFFF"/>
+              <stop offset="100%" stop-color="#F0EDE8"/>
+            </radialGradient>
+            <!-- 角的渐变 -->
+            <linearGradient id="hornGold" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FFD54F"/>
+              <stop offset="100%" stop-color="#FFA000"/>
+            </linearGradient>
+            <!-- 高光 -->
+            <radialGradient id="headShine" cx="35%" cy="25%" r="35%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.3)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+            </radialGradient>
+            <!-- 阴影 -->
+            <filter id="shadow1">
+              <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(0,0,0,0.3)"/>
+            </filter>
+            <filter id="glow1">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- 尾巴 -->
+          <g>
+            <path d="M140 195 Q165 175 170 145 Q172 125 165 115 Q160 108 155 112" 
+                  fill="none" stroke="#4CAF50" stroke-width="14" stroke-linecap="round"/>
+            <path d="M140 195 Q165 175 170 145 Q172 125 165 115 Q160 108 155 112" 
+                  fill="none" stroke="#66BB6A" stroke-width="8" stroke-linecap="round"/>
+            <!-- 尾巴尖（白色小圆球） -->
+            <circle cx="155" cy="112" r="7" fill="#fff" opacity="0.9"/>
+            <animateTransform attributeName="transform" type="rotate" values="-4 140 195;4 140 195;-4 140 195" dur="2.5s" repeatCount="indefinite"/>
+          </g>
+
+          <!-- 小翅膀（背后） -->
+          <g opacity="0.85">
+            <path d="M55 135 Q30 110 40 85 Q48 100 55 120" fill="#81C784" stroke="#66BB6A" stroke-width="1.5"/>
+            <path d="M55 135 Q35 115 45 92" fill="none" stroke="#A5D6A7" stroke-width="1" opacity="0.5"/>
+            <path d="M145 135 Q170 110 160 85 Q152 100 145 120" fill="#81C784" stroke="#66BB6A" stroke-width="1.5"/>
+            <path d="M145 135 Q165 115 155 92" fill="none" stroke="#A5D6A7" stroke-width="1" opacity="0.5"/>
+            <animateTransform attributeName="transform" type="rotate" values="-3 100 135;3 100 135;-3 100 135" dur="1.8s" repeatCount="indefinite"/>
+          </g>
+
+          <!-- 身体 -->
+          <ellipse cx="100" cy="185" rx="48" ry="42" fill="url(#bodyGreen)" filter="url(#shadow1)"/>
+          <!-- 肚皮（白色） -->
+          <ellipse cx="100" cy="190" rx="32" ry="30" fill="url(#bellyWhite)"/>
+          <!-- 肚皮纹理 -->
+          <path d="M85 178 Q100 175 115 178" fill="none" stroke="#E8E5E0" stroke-width="0.8" opacity="0.5"/>
+          <path d="M88 188 Q100 185 112 188" fill="none" stroke="#E8E5E0" stroke-width="0.8" opacity="0.5"/>
+          <path d="M90 198 Q100 195 110 198" fill="none" stroke="#E8E5E0" stroke-width="0.8" opacity="0.5"/>
+
+          <!-- 小短腿 -->
+          <ellipse cx="78" cy="222" rx="16" ry="10" fill="#388E3C"/>
+          <ellipse cx="78" cy="222" rx="14" ry="8" fill="#4CAF50"/>
+          <ellipse cx="122" cy="222" rx="16" ry="10" fill="#388E3C"/>
+          <ellipse cx="122" cy="222" rx="14" ry="8" fill="#4CAF50"/>
+          <!-- 脚趾 -->
+          <circle cx="70" cy="226" r="3" fill="#388E3C"/>
+          <circle cx="78" cy="228" r="3" fill="#388E3C"/>
+          <circle cx="86" cy="226" r="3" fill="#388E3C"/>
+          <circle cx="114" cy="226" r="3" fill="#388E3C"/>
+          <circle cx="122" cy="228" r="3" fill="#388E3C"/>
+          <circle cx="130" cy="226" r="3" fill="#388E3C"/>
+
+          <!-- 手臂/小爪子 -->
+          <g>
+            <ellipse cx="56" cy="170" rx="12" ry="9" fill="#4CAF50" transform="rotate(-20 56 170)"/>
+            <ellipse cx="56" cy="170" rx="10" ry="7" fill="#66BB6A" transform="rotate(-20 56 170)"/>
+            <animateTransform attributeName="transform" type="rotate" values="-5 56 165;5 56 165;-5 56 165" dur="2s" repeatCount="indefinite"/>
+          </g>
+          <g>
+            <ellipse cx="144" cy="170" rx="12" ry="9" fill="#4CAF50" transform="rotate(20 144 170)"/>
+            <ellipse cx="144" cy="170" rx="10" ry="7" fill="#66BB6A" transform="rotate(20 144 170)"/>
+            <animateTransform attributeName="transform" type="rotate" values="5 144 165;-5 144 165;5 144 165" dur="2s" repeatCount="indefinite" begin="0.5s"/>
+          </g>
+
+          <!-- 头（绿色外壳） -->
+          <circle cx="100" cy="95" r="55" fill="url(#headGreen)" filter="url(#shadow1)"/>
+          <!-- 头部高光 -->
+          <circle cx="100" cy="95" r="55" fill="url(#headShine)"/>
+
+          <!-- 脸（白色区域） -->
+          <ellipse cx="100" cy="102" rx="40" ry="38" fill="url(#faceWhite)"/>
+
+          <!-- 龙角 -->
+          <g>
+            <path d="M62 55 Q52 25 62 10" fill="none" stroke="url(#hornGold)" stroke-width="8" stroke-linecap="round"/>
+            <path d="M62 55 Q52 25 62 10" fill="none" stroke="#FFE082" stroke-width="4" stroke-linecap="round"/>
+            <!-- 角上的纹路 -->
+            <path d="M58 40 Q60 37 58 33" fill="none" stroke="#FFC107" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <path d="M56 30 Q58 27 57 23" fill="none" stroke="#FFC107" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          </g>
+          <g>
+            <path d="M138 55 Q148 25 138 10" fill="none" stroke="url(#hornGold)" stroke-width="8" stroke-linecap="round"/>
+            <path d="M138 55 Q148 25 138 10" fill="none" stroke="#FFE082" stroke-width="4" stroke-linecap="round"/>
+            <path d="M142 40 Q140 37 142 33" fill="none" stroke="#FFC107" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <path d="M144 30 Q142 27 143 23" fill="none" stroke="#FFC107" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          </g>
+          <!-- 角尖发光 -->
+          <circle cx="62" cy="10" r="4" fill="#FFF9C4" filter="url(#glow1)">
+            <animate attributeName="r" values="3;5;3" dur="3s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.8;0.4;0.8" dur="3s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="138" cy="10" r="4" fill="#FFF9C4" filter="url(#glow1)">
+            <animate attributeName="r" values="3;5;3" dur="3s" repeatCount="indefinite" begin="1.5s"/>
+            <animate attributeName="opacity" values="0.4;0.8;0.4" dur="3s" repeatCount="indefinite" begin="1.5s"/>
+          </circle>
+
+          <!-- 眼睛 -->
+          <g>
+            <!-- 左眼 -->
+            <ellipse cx="82" cy="92" rx="12" ry="14" fill="#2E7D32"/>
+            <ellipse cx="82" cy="92" rx="10" ry="12" fill="#1B5E20"/>
+            <ellipse cx="82" cy="94" rx="7" ry="8" fill="#2E7D32"/>
+            <!-- 瞳孔 -->
+            <ellipse cx="82" cy="94" rx="4" ry="5" fill="#0a0a1a"/>
+            <!-- 高光 -->
+            <circle cx="86" cy="88" r="5" fill="#fff" opacity="0.9"/>
+            <circle cx="79" cy="96" r="2.5" fill="#fff" opacity="0.4"/>
+            <!-- 上眼睑阴影 -->
+            <path d="M70 86 Q82 82 94 86" fill="none" stroke="#388E3C" stroke-width="2.5" stroke-linecap="round"/>
+            
+            <!-- 右眼 -->
+            <ellipse cx="118" cy="92" rx="12" ry="14" fill="#2E7D32"/>
+            <ellipse cx="118" cy="92" rx="10" ry="12" fill="#1B5E20"/>
+            <ellipse cx="118" cy="94" rx="7" ry="8" fill="#2E7D32"/>
+            <ellipse cx="118" cy="94" rx="4" ry="5" fill="#0a0a1a"/>
+            <circle cx="122" cy="88" r="5" fill="#fff" opacity="0.9"/>
+            <circle cx="115" cy="96" r="2.5" fill="#fff" opacity="0.4"/>
+            <path d="M106 86 Q118 82 130 86" fill="none" stroke="#388E3C" stroke-width="2.5" stroke-linecap="round"/>
+          </g>
+
+          <!-- 腮红 -->
+          <ellipse cx="68" cy="108" rx="8" ry="5" fill="#FF8A80" opacity="0.35"/>
+          <ellipse cx="132" cy="108" rx="8" ry="5" fill="#FF8A80" opacity="0.35"/>
+
+          <!-- 鼻子（小点） -->
+          <ellipse cx="96" cy="105" rx="2" ry="1.5" fill="#A5D6A7"/>
+          <ellipse cx="104" cy="105" rx="2" ry="1.5" fill="#A5D6A7"/>
+
+          <!-- 嘴巴（微笑） -->
+          <path d="M88 115 Q94 122 100 120 Q106 122 112 115" fill="none" stroke="#795548" stroke-width="2" stroke-linecap="round"/>
+
+          <!-- 头顶小叶子装饰 -->
+          <g>
+            <path d="M95 42 Q90 28 100 22 Q110 28 105 42" fill="#66BB6A" stroke="#4CAF50" stroke-width="1"/>
+            <path d="M100 42 Q100 30 100 22" fill="none" stroke="#81C784" stroke-width="1" opacity="0.6"/>
+            <animateTransform attributeName="transform" type="rotate" values="-3 100 42;3 100 42;-3 100 42" dur="4s" repeatCount="indefinite"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+    
+    <div class="palette">
+      <div class="swatch" style="background:#4CAF50" data-label="身体"></div>
+      <div class="swatch" style="background:#66BB6A" data-label="高光"></div>
+      <div class="swatch" style="background:#388E3C" data-label="阴影"></div>
+      <div class="swatch" style="background:#FFFFFF" data-label="脸/肚"></div>
+      <div class="swatch" style="background:#FFD54F" data-label="角"></div>
+      <div class="swatch" style="background:#FF8A80" data-label="腮红"></div>
+    </div>
+    
+    <div class="exprs">
+      <div class="expr-item"><div class="e">😊</div><div class="l">开心</div></div>
+      <div class="expr-item"><div class="e">😤</div><div class="l">生气</div></div>
+      <div class="expr-item"><div class="e">😴</div><div class="l">犯困</div></div>
+      <div class="expr-item"><div class="e">🤓</div><div class="l">认真</div></div>
+      <div class="expr-item"><div class="e">🎉</div><div class="l">庆祝</div></div>
+    </div>
+    
+    <div class="badges">
+      <span class="badge green">翠绿色系</span>
+      <span class="badge gold">金色龙角</span>
+      <span class="badge blue">白脸白肚</span>
+      <span class="badge purple">圆润Q弹</span>
+    </div>
+  </div>
+
+  <!-- ===== 方案B: 日系插画风小龙人 ===== -->
+  <div class="card">
+    <h2>✨ 日系插画小龙人</h2>
+    <p class="sub">精致唯美 · 赛璐璐着色 · 飘逸灵动</p>
+    
+    <div class="stage">
+      <div class="sign-demo" style="position:absolute;top:20px;left:20px;background:rgba(255,255,255,0.95);border-radius:10px;padding:6px 14px;font-size:12px;color:#333;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:10;animation:signWave 3s ease-in-out infinite;">📋 查天气</div>
+      
+      <div class="elf-wrap">
+        <svg width="200" height="260" viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="elfBody" cx="50%" cy="40%" r="55%">
+              <stop offset="0%" stop-color="#A5D6A7"/>
+              <stop offset="100%" stop-color="#66BB6A"/>
+            </radialGradient>
+            <radialGradient id="elfFace" cx="48%" cy="38%" r="55%">
+              <stop offset="0%" stop-color="#FFFFFF"/>
+              <stop offset="100%" stop-color="#FFF8F0"/>
+            </radialGradient>
+            <radialGradient id="elfBelly" cx="50%" cy="40%" r="55%">
+              <stop offset="0%" stop-color="#FFFFFF"/>
+              <stop offset="100%" stop-color="#FAFAF5"/>
+            </radialGradient>
+            <linearGradient id="elfHair" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#2E7D32"/>
+              <stop offset="100%" stop-color="#1B5E20"/>
+            </linearGradient>
+            <linearGradient id="elfHorn2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FFD54F"/>
+              <stop offset="50%" stop-color="#FFC107"/>
+              <stop offset="100%" stop-color="#FF8F00"/>
+            </linearGradient>
+            <radialGradient id="elfShine" cx="35%" cy="25%" r="35%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.25)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+            </radialGradient>
+            <filter id="shadow2">
+              <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="rgba(0,0,0,0.25)"/>
+            </filter>
+            <filter id="glow2">
+              <feGaussianBlur stdDeviation="4" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- 魔法粒子 -->
+          <circle cx="35" cy="60" r="2" fill="#A5D6A7" opacity="0.5">
+            <animate attributeName="cy" values="60;50;60" dur="4s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;0.1;0.5" dur="4s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="165" cy="45" r="1.5" fill="#81C784" opacity="0.4">
+            <animate attributeName="cy" values="45;38;45" dur="3s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.4;0.1;0.4" dur="3s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="25" cy="120" r="1" fill="#FFD54F" opacity="0.3">
+            <animate attributeName="cy" values="120;112;120" dur="3.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="175" cy="100" r="1.5" fill="#FFD54F" opacity="0.3">
+            <animate attributeName="cy" values="100;93;100" dur="2.8s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="50" cy="180" r="1" fill="#A5D6A7" opacity="0.3">
+            <animate attributeName="cy" values="180;173;180" dur="3.2s" repeatCount="indefinite"/>
+          </circle>
+
+          <!-- 尾巴 -->
+          <g>
+            <path d="M145 210 Q170 195 178 165 Q182 145 175 130 Q170 120 162 125" 
+                  fill="none" stroke="#4CAF50" stroke-width="12" stroke-linecap="round"/>
+            <path d="M145 210 Q170 195 178 165 Q182 145 175 130 Q170 120 162 125" 
+                  fill="none" stroke="#81C784" stroke-width="6" stroke-linecap="round"/>
+            <!-- 尾巴尖的叶子形状 -->
+            <path d="M162 125 Q155 118 160 110 Q165 115 162 125" fill="#66BB6A"/>
+            <animateTransform attributeName="transform" type="rotate" values="-3 145 210;4 145 210;-3 145 210" dur="3s" repeatCount="indefinite"/>
+          </g>
+
+          <!-- 身体 -->
+          <ellipse cx="100" cy="195" rx="42" ry="40" fill="url(#elfBody)" filter="url(#shadow2)"/>
+          <!-- 衣服/装饰纹路 -->
+          <path d="M68 180 Q100 172 132 180" fill="none" stroke="#81C784" stroke-width="1.5" opacity="0.5"/>
+          <!-- 肚皮白色 -->
+          <ellipse cx="100" cy="200" rx="28" ry="26" fill="url(#elfBelly)"/>
+          <!-- 肚皮上小纹路 -->
+          <path d="M88 192 Q100 189 112 192" fill="none" stroke="#EEE" stroke-width="0.8" opacity="0.4"/>
+          <path d="M90 200 Q100 197 110 200" fill="none" stroke="#EEE" stroke-width="0.8" opacity="0.4"/>
+
+          <!-- 腿 -->
+          <ellipse cx="80" cy="232" rx="14" ry="10" fill="#4CAF50"/>
+          <ellipse cx="80" cy="232" rx="12" ry="8" fill="#66BB6A"/>
+          <ellipse cx="120" cy="232" rx="14" ry="10" fill="#4CAF50"/>
+          <ellipse cx="120" cy="232" rx="12" ry="8" fill="#66BB6A"/>
+
+          <!-- 手臂 -->
+          <g>
+            <path d="M60 180 Q42 190 45 205" fill="none" stroke="#66BB6A" stroke-width="12" stroke-linecap="round"/>
+            <path d="M60 180 Q42 190 45 205" fill="none" stroke="#81C784" stroke-width="7" stroke-linecap="round"/>
+            <animateTransform attributeName="transform" type="rotate" values="-3 60 180;3 60 180;-3 60 180" dur="3s" repeatCount="indefinite"/>
+          </g>
+          <g>
+            <path d="M140 180 Q158 190 155 205" fill="none" stroke="#66BB6A" stroke-width="12" stroke-linecap="round"/>
+            <path d="M140 180 Q158 190 155 205" fill="none" stroke="#81C784" stroke-width="7" stroke-linecap="round"/>
+            <animateTransform attributeName="transform" type="rotate" values="3 140 180;-3 140 180;3 140 180" dur="3s" repeatCount="indefinite" begin="1s"/>
+          </g>
+
+          <!-- 头（绿色） -->
+          <circle cx="100" cy="100" r="52" fill="url(#elfBody)" filter="url(#shadow2)"/>
+          <circle cx="100" cy="100" r="52" fill="url(#elfShine)"/>
+
+          <!-- 脸（白色） -->
+          <ellipse cx="100" cy="106" rx="38" ry="36" fill="url(#elfFace)"/>
+
+          <!-- 龙角（更精致） -->
+          <g>
+            <path d="M60 58 Q50 28 60 8" fill="none" stroke="url(#elfHorn2)" stroke-width="7" stroke-linecap="round"/>
+            <path d="M60 58 Q50 28 60 8" fill="none" stroke="#FFE082" stroke-width="3" stroke-linecap="round"/>
+            <path d="M57 42 Q59 38 57 33" fill="none" stroke="rgba(255,193,7,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M55 28 Q57 24 56 19" fill="none" stroke="rgba(255,193,7,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
+          <g>
+            <path d="M140 58 Q150 28 140 8" fill="none" stroke="url(#elfHorn2)" stroke-width="7" stroke-linecap="round"/>
+            <path d="M140 58 Q150 28 140 8" fill="none" stroke="#FFE082" stroke-width="3" stroke-linecap="round"/>
+            <path d="M143 42 Q141 38 143 33" fill="none" stroke="rgba(255,193,7,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M145 28 Q143 24 144 19" fill="none" stroke="rgba(255,193,7,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
+          <!-- 角尖发光 -->
+          <circle cx="60" cy="8" r="4" fill="#FFF9C4" filter="url(#glow2)">
+            <animate attributeName="r" values="3;5;3" dur="2.5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.9;0.4;0.9" dur="2.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="140" cy="8" r="4" fill="#FFF9C4" filter="url(#glow2)">
+            <animate attributeName="r" values="3;5;3" dur="2.5s" repeatCount="indefinite" begin="1.2s"/>
+            <animate attributeName="opacity" values="0.4;0.9;0.4" dur="2.5s" repeatCount="indefinite" begin="1.2s"/>
+          </circle>
+
+          <!-- 头发/刘海（深绿色，日系风） -->
+          <path d="M52 78 Q55 55 75 52 Q65 65 60 78" fill="url(#elfHair)" opacity="0.7"/>
+          <path d="M75 52 Q90 44 100 48 Q92 55 82 60 Q75 65 72 72" fill="url(#elfHair)" opacity="0.7"/>
+          <path d="M100 48 Q115 44 128 52 Q122 62 115 60 Q108 55 100 58" fill="url(#elfHair)" opacity="0.7"/>
+          <path d="M128 52 Q145 55 148 78 Q140 68 135 65 Q130 62 128 58" fill="url(#elfHair)" opacity="0.7"/>
+          <!-- 呆毛 -->
+          <path d="M95 48 Q93 32 100 25 Q107 32 105 48" fill="#2E7D32" opacity="0.6">
+            <animateTransform attributeName="transform" type="rotate" values="-5 100 48;5 100 48;-5 100 48" dur="4s" repeatCount="indefinite"/>
+          </path>
+
+          <!-- 眼睛（日系大眼） -->
+          <g>
+            <!-- 左眼 -->
+            <ellipse cx="82" cy="100" rx="11" ry="14" fill="#1B5E20"/>
+            <ellipse cx="82" cy="100" rx="9" ry="12" fill="#2E7D32"/>
+            <ellipse cx="82" cy="103" rx="6" ry="8" fill="#43A047"/>
+            <!-- 瞳孔 -->
+            <ellipse cx="82" cy="104" rx="3.5" ry="4.5" fill="#0a1a0a"/>
+            <!-- 高光（大+小） -->
+            <circle cx="87" cy="96" r="5" fill="#fff" opacity="0.95"/>
+            <circle cx="79" cy="106" r="2.5" fill="#fff" opacity="0.45"/>
+            <circle cx="85" cy="108" r="1.5" fill="#C8E6C9" opacity="0.3"/>
+            <!-- 上睫毛 -->
+            <path d="M71 92 Q76 88 82 90" fill="none" stroke="#1B5E20" stroke-width="2" stroke-linecap="round"/>
+            <path d="M82 90 Q88 88 93 92" fill="none" stroke="#1B5E20" stroke-width="2" stroke-linecap="round"/>
+
+            <!-- 右眼 -->
+            <ellipse cx="118" cy="100" rx="11" ry="14" fill="#1B5E20"/>
+            <ellipse cx="118" cy="100" rx="9" ry="12" fill="#2E7D32"/>
+            <ellipse cx="118" cy="103" rx="6" ry="8" fill="#43A047"/>
+            <ellipse cx="118" cy="104" rx="3.5" ry="4.5" fill="#0a1a0a"/>
+            <circle cx="123" cy="96" r="5" fill="#fff" opacity="0.95"/>
+            <circle cx="115" cy="106" r="2.5" fill="#fff" opacity="0.45"/>
+            <circle cx="121" cy="108" r="1.5" fill="#C8E6C9" opacity="0.3"/>
+            <path d="M107 92 Q112 88 118 90" fill="none" stroke="#1B5E20" stroke-width="2" stroke-linecap="round"/>
+            <path d="M118 90 Q124 88 129 92" fill="none" stroke="#1B5E20" stroke-width="2" stroke-linecap="round"/>
+          </g>
+
+          <!-- 腮红（花瓣形） -->
+          <g opacity="0.3">
+            <ellipse cx="66" cy="115" rx="7" ry="4" fill="#FF8A80"/>
+            <ellipse cx="134" cy="115" rx="7" ry="4" fill="#FF8A80"/>
+          </g>
+
+          <!-- 鼻子 -->
+          <circle cx="97" cy="112" r="1.5" fill="#C8E6C9"/>
+          <circle cx="103" cy="112" r="1.5" fill="#C8E6C9"/>
+
+          <!-- 嘴巴（温柔微笑） -->
+          <path d="M90 121 Q95 126 100 125 Q105 126 110 121" fill="none" stroke="#6D4C41" stroke-width="1.8" stroke-linecap="round"/>
+          <!-- 小虎牙 -->
+          <path d="M93 121 L94 124" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+
+          <!-- 小翅膀（背后，半透明） -->
+          <g opacity="0.6">
+            <path d="M55 155 Q28 130 38 100 Q45 118 55 140" fill="#A5D6A7" stroke="#81C784" stroke-width="1"/>
+            <path d="M145 155 Q172 130 162 100 Q155 118 145 140" fill="#A5D6A7" stroke="#81C784" stroke-width="1"/>
+            <animateTransform attributeName="transform" type="rotate" values="-2 100 155;2 100 155;-2 100 155" dur="2s" repeatCount="indefinite"/>
+          </g>
+
+          <!-- 脖子上的小围巾/领结 -->
+          <path d="M72 148 Q100 155 128 148" fill="none" stroke="#81C784" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="100" cy="152" r="4" fill="#66BB6A" stroke="#4CAF50" stroke-width="1"/>
+        </svg>
+      </div>
+    </div>
+    
+    <div class="palette">
+      <div class="swatch" style="background:#66BB6A" data-label="身体"></div>
+      <div class="swatch" style="background:#A5D6A7" data-label="亮部"></div>
+      <div class="swatch" style="background:#1B5E20" data-label="深色"></div>
+      <div class="swatch" style="background:#FFFFFF" data-label="脸/肚"></div>
+      <div class="swatch" style="background:#FFC107" data-label="角"></div>
+      <div class="swatch" style="background:#2E7D32" data-label="发"></div>
+    </div>
+    
+    <div class="exprs">
+      <div class="expr-item"><div class="e">😊</div><div class="l">微笑</div></div>
+      <div class="expr-item"><div class="e">😳</div><div class="l">害羞</div></div>
+      <div class="expr-item"><div class="e">✨</div><div class="l">施法</div></div>
+      <div class="expr-item"><div class="e">🍃</div><div class="l">悠闲</div></div>
+      <div class="expr-item"><div class="e">💫</div><div class="l">晕</div></div>
+    </div>
+    
+    <div class="badges">
+      <span class="badge green">自然系</span>
+      <span class="badge gold">精致龙角</span>
+      <span class="badge blue">大眼萌系</span>
+      <span class="badge purple">飘逸灵动</span>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes signWave {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+</style>
+
+<div class="footer">
+  SVG 概念示意（含动画效果）· 实际角色将由设计师精修 · 以 Lottie 动画交付<br>
+  陛下选定风格后，臣即刻开始编码
+</div>
+
+</body>
+</html>

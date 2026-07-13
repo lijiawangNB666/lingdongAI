@@ -1,0 +1,526 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能会议记录</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:#f0f2f5;min-height:100vh;display:flex;flex-direction:column}
+.header{background:linear-gradient(135deg,#1677ff 0%,#0958d9 100%);color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(22,119,255,.3);position:fixed;top:0;left:0;right:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-logo{width:32px;height:32px;background:rgba(255,255,255,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.header-title{font-size:17px;font-weight:600}
+.header-subtitle{font-size:12px;opacity:.75}
+.header-status{display:flex;align-items:center;gap:6px;font-size:13px;opacity:.9}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#52c41a;animation:pulse 2s infinite}
+.status-dot.recording{background:#ff4d4f}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.2)}}
+.main{margin-top:56px;display:flex;height:calc(100vh - 56px)}
+.sidebar{width:280px;background:#fff;border-right:1px solid #e8e8e8;display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-section{padding:16px;border-bottom:1px solid #f0f0f0}
+.sidebar-section-title{font-size:12px;color:#8c8c8c;font-weight:500;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+.btn-record{width:100%;height:52px;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-record.start{background:linear-gradient(135deg,#1677ff,#0958d9);color:#fff;box-shadow:0 4px 12px rgba(22,119,255,.35)}
+.btn-record.start:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(22,119,255,.45)}
+.btn-record.stop{background:linear-gradient(135deg,#ff4d4f,#d9363e);color:#fff;box-shadow:0 4px 12px rgba(255,77,79,.35)}
+.btn-record:disabled{opacity:.5;cursor:not-allowed}
+.btn-action{width:100%;height:38px;border:1px solid #d9d9d9;background:#fff;border-radius:8px;font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:8px;color:#333}
+.btn-action:hover{border-color:#1677ff;color:#1677ff;background:#f0f5ff}
+.btn-action.primary{background:#1677ff;color:#fff;border-color:#1677ff}
+.btn-action.primary:hover{background:#0958d9}
+.btn-action:last-child{margin-bottom:0}
+.wave-container{height:48px;display:flex;align-items:center;justify-content:center;gap:3px;margin:12px 0}
+.wave-bar{width:4px;border-radius:2px;background:#1677ff;height:8px}
+.wave-bar.active{animation:wave .8s ease-in-out infinite}
+.wave-bar:nth-child(2){animation-delay:.1s}.wave-bar:nth-child(3){animation-delay:.2s}.wave-bar:nth-child(4){animation-delay:.3s}.wave-bar:nth-child(5){animation-delay:.4s}.wave-bar:nth-child(6){animation-delay:.3s}.wave-bar:nth-child(7){animation-delay:.2s}.wave-bar:nth-child(8){animation-delay:.1s}
+@keyframes wave{0%,100%{height:8px}50%{height:36px}}
+.duration{text-align:center;font-size:24px;font-weight:300;color:#1677ff;letter-spacing:2px;padding:4px 0}
+.duration.inactive{color:#bfbfbf}
+.participant-input{width:100%;height:34px;border:1px solid #d9d9d9;border-radius:6px;padding:0 10px;font-size:13px;outline:none;transition:border-color .2s}
+.participant-input:focus{border-color:#1677ff;box-shadow:0 0 0 2px rgba(22,119,255,.1)}
+.participant-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:28px}
+.participant-tag{background:#f0f5ff;border:1px solid #adc6ff;color:#1677ff;border-radius:12px;padding:2px 10px;font-size:12px;display:flex;align-items:center;gap:4px}
+.participant-tag .remove{cursor:pointer;opacity:.6;font-size:14px;line-height:1}
+.participant-tag .remove:hover{opacity:1}
+.content-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e8e8e8;padding:0 24px}
+.tab{padding:14px 16px 12px;font-size:14px;cursor:pointer;color:#8c8c8c;border-bottom:2px solid transparent;transition:all .2s;display:flex;align-items:center;gap:6px}
+.tab.active{color:#1677ff;border-bottom-color:#1677ff;font-weight:500}
+.tab:hover:not(.active){color:#333}
+.tab-content{display:none;flex:1;overflow-y:auto;padding:24px;flex-direction:column;gap:16px}
+.tab-content.active{display:flex}
+.transcript-box{flex:1;background:#fff;border-radius:12px;border:1px solid #e8e8e8;padding:20px;overflow-y:auto;min-height:200px;max-height:calc(100vh - 260px)}
+.transcript-empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#bfbfbf;gap:12px}
+.transcript-empty .icon{font-size:48px}
+.transcript-empty p{font-size:14px}
+.transcript-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f5f5f5;animation:fadeIn .3s ease}
+.transcript-item:last-child{border-bottom:none}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.transcript-avatar{width:32px;height:32px;border-radius:50%;color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.transcript-body{flex:1}
+.transcript-meta{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.transcript-name{font-size:13px;font-weight:500;color:#333}
+.transcript-time{font-size:11px;color:#bfbfbf}
+.transcript-text{font-size:14px;color:#333;line-height:1.6}
+.transcript-text.interim{color:#8c8c8c;font-style:italic}
+.minutes-card{background:#fff;border-radius:12px;border:1px solid #e8e8e8;overflow:hidden;display:flex;flex-direction:column;height:100%}
+.minutes-header{padding:16px 20px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+.minutes-title-row{display:flex;align-items:center;gap:10px}
+.minutes-icon{width:36px;height:36px;background:linear-gradient(135deg,#1677ff,#722ed1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.minutes-title{font-size:16px;font-weight:600;color:#333}
+.minutes-date{font-size:12px;color:#8c8c8c;margin-top:2px}
+.minutes-body{padding:20px;font-size:14px;color:#333;line-height:1.8;white-space:pre-wrap;min-height:200px;overflow-y:auto;max-height:calc(100vh - 280px)}
+.loading-row{display:flex;align-items:center;gap:10px;color:#1677ff;padding:20px}
+.spinner{width:20px;height:20px;border:2px solid #e8e8e8;border-top-color:#1677ff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.summary-card{background:#fff;border-radius:12px;border:1px solid #e8e8e8;padding:16px}
+.summary-card-title{font-size:13px;color:#8c8c8c;font-weight:500;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.tag-list{display:flex;flex-wrap:wrap;gap:6px}
+.keyword-tag{background:#f0f5ff;color:#1677ff;border-radius:4px;padding:2px 8px;font-size:12px}
+.action-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
+.action-item:last-child{border-bottom:none}
+.action-check{width:16px;height:16px;border:2px solid #d9d9d9;border-radius:4px;margin-top:2px;flex-shrink:0;cursor:pointer}
+.action-check.checked{border-color:#52c41a;background:#52c41a}
+.toast{position:fixed;top:70px;right:24px;background:#333;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none}
+.toast.show{opacity:1}
+.toast.success{background:#52c41a}
+.toast.error{background:#ff4d4f}
+/* 文档模式渲染样式 */
+.minutes-body .doc-view{white-space:normal}
+.doc-view h1{font-size:20px;font-weight:700;margin:16px 0 10px;color:#1a1a1a;border-bottom:2px solid #e8e8e8;padding-bottom:6px}
+.doc-view h2{font-size:17px;font-weight:600;margin:14px 0 8px;color:#1a1a1a}
+.doc-view h3{font-size:15px;font-weight:600;margin:12px 0 6px;color:#333}
+.doc-view p{margin:6px 0;line-height:1.8}
+.doc-view ul{margin:6px 0;padding-left:22px}
+.doc-view li{margin:3px 0;line-height:1.7}
+.doc-view strong{font-weight:600;color:#1a1a1a}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">&#127897;</div>
+    <div>
+      <div class="header-title">智能会议记录</div>
+      <div class="header-subtitle">AI驱动 · 实时转写 · 自动生成纪要</div>
+    </div>
+  </div>
+  <div class="header-status">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">待机中</span>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">录音控制</div>
+      <button class="btn-record start" id="btnRecord" onclick="toggleRecord()">&#127897; 开始录音</button>
+      <div class="wave-container">
+        <div class="wave-bar" id="w1"></div><div class="wave-bar" id="w2"></div><div class="wave-bar" id="w3"></div><div class="wave-bar" id="w4"></div><div class="wave-bar" id="w5"></div><div class="wave-bar" id="w6"></div><div class="wave-bar" id="w7"></div><div class="wave-bar" id="w8"></div>
+      </div>
+      <div class="duration inactive" id="durationDisplay">00:00:00</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">会议信息</div>
+      <input class="participant-input" id="meetingTitle" placeholder="会议主题（选填）" style="margin-bottom:8px">
+      <input class="participant-input" id="participantInput" placeholder="参会人，回车添加" onkeydown="addParticipant(event)">
+      <div class="participant-list" id="participantList"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">📎 智能附件</div>
+      <input type="file" id="fileInput" accept="image/*,.pdf,.docx,.doc,.pptx,.ppt,.txt,.md" style="display:none;">
+      <button class="btn-action primary" onclick="document.getElementById('fileInput').click()">
+        📤 上传并识别（支持图片/PDF/Word/PPT/TXT）
+      </button>
+      <div id="fileStatus" style="font-size:12px;color:#52c41a;margin-top:6px;height:18px;"></div>
+      <div id="filePreview" style="margin-top:12px;max-height:100px;overflow:auto;font-size:13px;color:#333;"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">操作</div>
+      <button class="btn-action primary" onclick="generateMinutes()">✨ AI生成会议纪要</button>
+      <button class="btn-action" onclick="copyMinutes()">📋 复制会议纪要</button>
+      <button class="btn-action" onclick="exportMinutes()">📄 导出Word纪要</button>
+      <button class="btn-action" onclick="clearAll()">🗑️ 清空重置</button>
+    </div>
+  </div>
+
+  <div class="content-area">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('transcript',this)">&#127897; 实时转写</div>
+      <div class="tab" onclick="switchTab('minutes',this)">📝 会议纪要</div>
+      <div class="tab" onclick="switchTab('summary',this)">📊 摘要分析</div>
+    </div>
+    <div class="tab-content active" id="tab-transcript">
+      <div class="transcript-box" id="transcriptBox">
+        <div class="transcript-empty" id="transcriptEmpty">
+          <div class="icon">&#127897;</div>
+          <p>点击"开始录音"开始实时转写</p>
+          <p style="font-size:12px;color:#d9d9d9">需要Chrome浏览器并允许麦克风权限</p>
+        </div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-minutes">
+      <div class="minutes-card">
+        <div class="minutes-header">
+          <div class="minutes-title-row">
+            <div class="minutes-icon">📝</div>
+            <div>
+              <div class="minutes-title" id="minutesTitle">会议纪要</div>
+              <div class="minutes-date" id="minutesDate"></div>
+            </div>
+          </div>
+          <button class="btn-action" style="width:auto;padding:0 12px;margin:0" onclick="generateMinutes()">✨ 重新生成</button>
+        </div>
+        <div class="minutes-body" id="minutesBody"><div style="color:#bfbfbf;text-align:center;padding:40px">点击左侧"AI生成会议纪要"按钮，将根据转写内容自动生成结构化纪要</div></div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-summary">
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-card-title">🔑 关键词</div>
+          <div class="tag-list" id="keywordList"><span style="color:#bfbfbf;font-size:12px">生成纪要后显示</span></div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-card-title">👥 参会人员</div>
+          <div class="tag-list" id="participantDisplay"><span style="color:#bfbfbf;font-size:12px">添加参会人后显示</span></div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-title">✅ 待办事项</div>
+        <div id="actionList"><div style="color:#bfbfbf;font-size:13px;text-align:center;padding:20px">生成纪要后自动提取</div></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-title">💡 会议摘要</div>
+        <div id="meetingSummary" style="font-size:13px;line-height:1.7;color:#333"><span style="color:#bfbfbf">生成纪要后显示</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var isRecording=false,recognition=null,transcript=[],startTime=null,durationTimer=null,interimItem=null,_lastMinutesMd='';
+// 从 URL 参数读取端口，兼容 main.js 动态端口
+var _urlPort=(new URLSearchParams(location.search)).get('port');
+var SERVER='http://127.0.0.1:'+(_urlPort||location.port||'18765');
+
+function showToast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+(type||'');
+  setTimeout(function(){t.className='toast';},3000);
+}
+function fmt(sec){
+  var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
+  return [h,m,s].map(function(v){return String(v).padStart(2,'0')}).join(':');
+}
+function ts(){return new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function elapsed(){return startTime?Math.floor((Date.now()-startTime)/1000):0;}
+function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function switchTab(name,el){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+var participants=[];
+function addParticipant(e){
+  if(e.key!=='Enter')return;
+  var inp=document.getElementById('participantInput');
+  var n=inp.value.trim();
+  if(!n||participants.indexOf(n)>=0){inp.value='';return;}
+  participants.push(n);inp.value='';renderParticipants();
+}
+function removeParticipant(n){
+  participants=participants.filter(function(p){return p!==n;});renderParticipants();
+}
+function renderParticipants(){
+  document.getElementById('participantList').innerHTML=participants.map(function(p){
+    return '<div class="participant-tag">'+esc(p)+'<span class="remove" onclick="removeParticipant(\''+esc(p)+'\')">×</span></div>';
+  }).join('');
+  var disp=document.getElementById('participantDisplay');
+  disp.innerHTML=participants.length===0?'<span style="color:#bfbfbf;font-size:12px">添加参会人后显示</span>':participants.map(function(p){return '<div class="keyword-tag">👤 '+esc(p)+'</div>';}).join('');
+}
+
+function startWave(){for(var i=1;i<=8;i++)document.getElementById('w'+i).classList.add('active');}
+function stopWave(){for(var i=1;i<=8;i++){var b=document.getElementById('w'+i);b.classList.remove('active');b.style.height='8px';}}
+
+function startTimer(){
+  startTime=Date.now();
+  durationTimer=setInterval(function(){
+    document.getElementById('durationDisplay').textContent=fmt(elapsed());
+  },1000);
+  document.getElementById('durationDisplay').classList.remove('inactive');
+}
+function stopTimer(){clearInterval(durationTimer);}
+
+function toggleRecord(){if(!isRecording)startRecording();else stopRecording();}
+
+function startRecording(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){
+    showToast('浏览器不支持语音识别，请使用Chrome','error');
+    document.getElementById('transcriptEmpty').innerHTML='<div class="icon">⚠️</div><p style="color:#ff4d4f">请使用 Chrome 浏览器打开此页面</p><p style="font-size:12px">Edge / Safari 不支持实时语音识别</p>';
+    return;
+  }
+  // 先用 getUserMedia 申请麦克风权限，Chrome 要求必须先授权才能用 SpeechRecognition
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    // 拿到权限后立即释放 stream（SpeechRecognition 会自己管理麦克风）
+    stream.getTracks().forEach(function(t){t.stop();});
+    _doStartRecognition(SR);
+  }).catch(function(err){
+    if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError'){
+      showToast('麦克风权限被拒绝，请点击地址栏左侧的锁图标 → 允许麦克风','error');
+      document.getElementById('transcriptEmpty').innerHTML='<div class="icon">🎤</div><p style="color:#ff4d4f;font-weight:600">需要麦克风权限</p><p style="font-size:13px;color:#666;margin-top:4px">请点击浏览器地址栏左侧的 🔒 图标</p><p style="font-size:13px;color:#666">将"麦克风"设置为"允许"后刷新页面</p>';
+    } else {
+      showToast('无法访问麦克风：'+err.message,'error');
+    }
+  });
+}
+
+function _doStartRecognition(SR){
+  recognition=new SR();
+  recognition.continuous=true;recognition.interimResults=true;recognition.lang='zh-CN';recognition.maxAlternatives=1;
+  recognition.onstart=function(){
+    isRecording=true;
+    document.getElementById('btnRecord').className='btn-record stop';
+    document.getElementById('btnRecord').innerHTML='⏹️ 停止录音';
+    document.getElementById('statusDot').className='status-dot recording';
+    document.getElementById('statusText').textContent='录音中...';
+    startWave();startTimer();hideEmpty();showToast('开始录音','success');
+  };
+  recognition.onresult=function(event){
+    var interim='',final_text='';
+    for(var i=event.resultIndex;i<event.results.length;i++){
+      if(event.results[i].isFinal)final_text=event.results[i][0].transcript.trim();
+      else interim=event.results[i][0].transcript.trim();
+    }
+    if(final_text){removeInterim();addItem(final_text);sendResult(final_text,'transcript');}
+    else if(interim)updateInterim(interim);
+  };
+  recognition.onerror=function(event){
+    if(event.error==='not-allowed'){showToast('麦克风权限被拒绝，请在地址栏允许麦克风','error');stopRecording();}
+    else if(event.error==='network'){showToast('网络错误，语音识别需要联网','error');}
+    else if(event.error!=='no-speech')showToast('识别出错: '+event.error,'error');
+  };
+  recognition.onend=function(){if(isRecording){try{recognition.start();}catch(e){}}};
+  try{recognition.start();}catch(e){showToast('无法启动识别: '+e.message,'error');}
+}
+
+function stopRecording(){
+  isRecording=false;
+  if(recognition){recognition.onend=null;recognition.stop();recognition=null;}
+  document.getElementById('btnRecord').className='btn-record start';
+  document.getElementById('btnRecord').innerHTML='&#127897; 开始录音';
+  document.getElementById('statusDot').className='status-dot';
+  document.getElementById('statusText').textContent='录音已停止';
+  stopWave();stopTimer();removeInterim();showToast('录音已停止');
+}
+
+function hideEmpty(){var e=document.getElementById('transcriptEmpty');if(e)e.style.display='none';}
+
+var colors=['#1677ff','#722ed1','#eb2f96','#fa8c16','#52c41a'];
+function addItem(text){
+  var box=document.getElementById('transcriptBox');
+  var el=document.createElement('div');el.className='transcript-item';
+  var sp=participants.length>0?participants[Math.floor(Math.random()*participants.length)]:'发言人';
+  var col=colors[Math.abs(sp.charCodeAt(0))%colors.length];
+  var t=fmt(elapsed()),ts2=ts();
+  el.innerHTML='<div class="transcript-avatar" style="background:'+col+'">'+esc(sp.charAt(0))+'</div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-name">'+esc(sp)+'</span><span class="transcript-time">'+ts2+' ['+t+']</span></div><div class="transcript-text">'+esc(text)+'</div></div>';
+  box.appendChild(el);box.scrollTop=box.scrollHeight;
+  transcript.push({time:t,timestamp:ts2,speaker:sp,text:text});
+}
+function updateInterim(text){
+  removeInterim();
+  var box=document.getElementById('transcriptBox');
+  var el=document.createElement('div');el.className='transcript-item interim-item';
+  el.innerHTML='<div class="transcript-avatar" style="background:#bfbfbf">…</div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-name">识别中</span><span class="transcript-time">'+ts()+'</span></div><div class="transcript-text interim">'+esc(text)+'</div></div>';
+  box.appendChild(el);box.scrollTop=box.scrollHeight;interimItem=el;
+}
+function removeInterim(){if(interimItem&&interimItem.parentNode){interimItem.parentNode.removeChild(interimItem);interimItem=null;}}
+
+function sendResult(text,type){
+  fetch(SERVER+'/voice-result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text,type:type,timestamp:Date.now()})}).catch(function(){});
+}
+
+// 智能会议纪要助手标准提示词（与Agent系统提示词完全一致）
+var MINUTES_SYSTEM_PROMPT = '你是专业级全自动化会议纪要智能体，能力全面对标并超越科大讯飞会议纪要AI，专门面向企业办公、团队例会、项目评审、线上线下研讨会、飞书/企业微信/线上语音会议全场景，不限行业、不限人数、不限会议时长。你只做一件事：接收会议原始语音转文字全文，全自动降噪、梳理、提炼、结构化、输出可直接归档、可直接下发、可直接执行的标准会议纪要。全程无需人工修改、无需人工排版、无需二次整理。\n一、核心硬性工作规则（必须严格遵守，不可省略）\n1. 自动降噪清洗：自动过滤口水话、重复语句、卡顿杂音、语气词、打断插话、无关闲聊、网络卡顿乱码、口头垫话，只保留有效办公业务信息。\n2. 自动区分发言人与权责：多人混合发言不用人工标注，自动按语义、话题切换、角色口吻智能拆分发言人逻辑，分不清具体姓名时统一标注为「参会成员A/参会负责人/执行岗/管理岗」，不瞎编人名。\n3. 不篡改、不脑补、不夸大：只基于会议原文提炼，严禁凭空加内容、严禁私自引申业务、严禁改写领导原话，保真还原核心意图。\n4. 全程结构化输出：所有纪要必须统一固定模板，不乱排版、不自由发挥、不分乱七八糟小标题，严格按规定格式输出。\n5. 重点优先抓取四类核心信息：会议核心议题、已定决策结论、明确分工责任人、限时待办任务，其余废话全部压缩精简。\n二、自动智能识别能力（内置全自动能力，无需用户手动设置）\n✅ 自动识别：谁是负责人、谁是执行人员、谁提需求、谁拍板决策\n✅ 自动识别：项目卡点、现存问题、资源缺口、需要跨部门协调事项\n✅ 自动识别：口头承诺 deadline、明确完成时间、节点验收要求\n✅ 自动识别：临时新增需求、变更原有方案、推翻旧计划的关键节点\n✅ 自动识别：需要会后跟进、需要复盘、需要上报领导、需要同步全员的事项\n✅ 自动过滤：情绪话、抱怨话、闲聊吐槽、无关八卦、场外插话\n三、强制固定输出模板（必须严格按这个格式输出，不许改）\n📅 一、会议基础信息\n会议主题：自动提炼本场会议核心主题\n会议时间：默认按当前时间标注，原文有时间就用原文时间\n参会人员：自动汇总所有出现的岗位/人员角色，无姓名则按岗位归类\n会议类型：例会 / 项目推进会 / 问题复盘会 / 需求评审会 / 临时专项会（自动匹配）\n📌 二、本次会议核心议题（极简浓缩，不超过5条）\n逐条罗列本场开会真正要解决的核心事，去掉所有铺垫废话，直接写正事。\n✅ 三、会议已定正式决策（最重要、优先提炼）\n把会上已经拍板、已经定下来、不许再改的所有结论，一条一条清晰列出，不含模糊话术，全部写死、写明确。\n👥 四、人员分工与责任归属（精准到人/到岗位）\n每条分工必须写清楚：谁负责、负责什么、对接谁、需要配合哪个部门，责任不模糊、不笼统。\n⏰ 五、会后待办任务清单（带时间、带标准、可直接督办）\n格式统一：【任务内容】+【负责人】+【截止完成时间】+【验收标准】+【对接协作部门】，全部补齐，不漏一项。\n⚠️ 六、当前项目卡点 & 风险预警（自动抓取）\n会上提到的困难、缺资源、缺人手、技术卡点、外部卡点、风险隐患，全部单独列出来，方便领导直接督办解决。\n🔁 七、下次会议安排（如有自动写，没有就写：无）\n包含：下次开会时间、需要提前准备材料、需要提前对齐事项。\n📝 八、会议极简全文摘要（300字以内，快速速读）\n把整场会议压缩成短摘要，领导不用看长文，一眼看懂全部重点。\n四、严格禁止行为（违规直接判定任务失败）\n❌ 禁止写长篇大论流水账\n❌ 禁止保留口语废话、重复语句\n❌ 禁止随意增加会议没有提到的内容\n❌ 禁止模糊分工、模糊时间、模糊决策\n❌ 禁止排版混乱、不用规定模板\n❌ 禁止输出多余客套话、多余解释\n请用中文输出。禁止用表格，一律用大小标题来区分。';
+
+async function generateMinutes(){
+  if(transcript.length===0){showToast('没有转写内容，请先录音','error');return;}
+  switchTab('minutes',document.querySelectorAll('.tab')[1]);
+  var title=document.getElementById('meetingTitle').value.trim()||'会议';
+  var dateStr=new Date().toLocaleString('zh-CN');
+  document.getElementById('minutesTitle').textContent=title+'纪要';
+  document.getElementById('minutesDate').textContent=dateStr;
+  var body=document.getElementById('minutesBody');
+  body.innerHTML='<div class="loading-row"><div class="spinner"></div> AI正在生成会议纪要，请稍候...</div>';
+  var txText=transcript.map(function(t){return '['+t.time+'] '+t.speaker+': '+t.text;}).join('\n');
+  var ps=participants.length>0?participants.join('、'):'未指定';
+  var dur=document.getElementById('durationDisplay').textContent;
+  var userPrompt='会议主题：'+title+'\n会议时间：'+dateStr+'\n参会人员：'+ps+'\n会议时长：'+dur+'\n\n以下是会议原始语音转写记录：\n'+txText+'\n\n请严格按照系统提示词中的【强制固定输出模板】生成会议纪要，必须包含全部八个部分（会议基础信息、核心议题、已定决策、人员分工、待办任务、卡点风险、下次会议安排、极简摘要），不得省略任何部分。';
+  try{
+    var resp=await fetch(SERVER+'/ai-proxy',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({userMessage:userPrompt,maxTokens:3000})
+    });
+    if(resp.ok){
+      var data=await resp.json();
+      if(data.success&&data.text){
+        _lastMinutesMd=data.text;
+        body.innerHTML='<div class="doc-view" style="line-height:1.8">'+markdownToHtml(data.text)+'</div>';
+        extractSummary(data.text,txText);sendResult(data.text,'minutes');showToast('会议纪要生成成功！','success');
+        return;
+      }
+    }
+  }catch(e){}
+  // 降级：本地模板生成（保持标准8部分格式）
+  var local='📅 一、会议基础信息\n会议主题：'+title+'\n会议时间：'+dateStr+'\n参会人员：'+ps+'\n会议类型：临时专项会\n\n📌 二、本次会议核心议题\n- '+title+'\n\n✅ 三、会议已定正式决策\n（待AI补充）\n\n👥 四、人员分工与责任归属\n（待AI补充）\n\n⏰ 五、会后待办任务清单\n（待AI补充）\n\n⚠️ 六、当前项目卡点 & 风险预警\n（待AI补充）\n\n🔁 七、下次会议安排\n无\n\n📝 八、会议极简全文摘要\n（待AI补充）';
+  _lastMinutesMd=local;
+  body.innerHTML='<div class="doc-view" style="line-height:1.8">'+markdownToHtml(local)+'</div>';
+  sendResult(local,'minutes');showToast('已生成纪要（本地模板）','success');
+}
+
+function extractSummary(minutes,txText){
+  var words=txText.split(/[\s，。！？、：；]/);
+  var freq={};
+  words.forEach(function(w){if(w.length>=2)freq[w]=(freq[w]||0)+1;});
+  var kws=Object.entries(freq).sort(function(a,b){return b[1]-a[1];}).slice(0,8).map(function(e){return e[0];});
+  document.getElementById('keywordList').innerHTML=kws.map(function(k){return '<div class="keyword-tag">'+esc(k)+'</div>';}).join('');
+  document.getElementById('meetingSummary').textContent=minutes.substring(0,200)+(minutes.length>200?'...':'');
+  var actions=minutes.split('\n').filter(function(l){return l.match(/负责|安排|完成|跟进|确认|提交|准备|整理|联系/);}).slice(0,5);
+  var al=document.getElementById('actionList');
+  if(actions.length>0)al.innerHTML=actions.map(function(l){return '<div class="action-item"><div class="action-check" onclick="this.classList.toggle(\'checked\')"></div><span>'+esc(l.replace(/^[-•*\d.]\s*/,''))+'</span></div>';}).join('');
+}
+
+function copyMinutes(){
+  var content=_lastMinutesMd||document.getElementById('minutesBody').textContent;
+  if(!content.trim()||content.indexOf('点击')>=0){showToast('请先生成会议纪要','error');return;}
+  navigator.clipboard.writeText(content).then(function(){showToast('已复制会议纪要','success');});
+}
+
+function exportMinutes(){
+  var content=_lastMinutesMd||document.getElementById('minutesBody').textContent;
+  if(!content.trim()||content.indexOf('点击')>=0){showToast('请先生成会议纪要','error');return;}
+  var title=document.getElementById('meetingTitle').value.trim()||'会议纪要';
+  var now=new Date();
+  var dateTag=now.getFullYear()+'-'+(now.getMonth()+1).toString().padStart(2,'0')+'-'+now.getDate().toString().padStart(2,'0');
+  var timeTag=now.getHours().toString().padStart(2,'0')+now.getMinutes().toString().padStart(2,'0');
+  var filename=title+'-'+dateTag+'-'+timeTag;
+  // 保存到智能会议纪要助手的文件存储路径（Markdown格式）
+  fetch(SERVER+'/voice-save',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({filename:filename,content:content})
+  }).then(function(r){return r.json();}).then(function(d){
+    if(d.success){
+      showToast('会议纪要已保存为 Word 文档：'+d.path,'success');
+    } else {
+      showToast('保存失败：'+(d.error||'未知错误'),'error');
+    }
+  }).catch(function(){showToast('保存失败，请检查灵动AI是否运行','error');});
+}
+
+function markdownToHtml(md){
+  var html=md;
+  // 转义 HTML 特殊字符（但保留 Markdown 标记）
+  html=html.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // 标题：# ## ###
+  html=html.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+  html=html.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+  html=html.replace(/^# (.+)$/gm,'<h1>$1</h1>');
+  // 粗体
+  html=html.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  // 斜体
+  html=html.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  // 无序列表
+  html=html.replace(/^[-*] (.+)$/gm,'<li>$1</li>');
+  html=html.replace(/(<li>.*<\/li>\n?)+/g,function(match){return '<ul>'+match+'</ul>';});
+  // 有序列表
+  html=html.replace(/^\d+\. (.+)$/gm,'<li>$1</li>');
+  // 换行转段落
+  html=html.replace(/\n\n/g,'</p><p>');
+  html=html.replace(/\n/g,'<br>');
+  html='<p>'+html+'</p>';
+  // 清理空段落
+  html=html.replace(/<p>\s*<\/p>/g,'');
+  html=html.replace(/<p>\s*(<h[123]>)/g,'$1');
+  html=html.replace(/(<\/h[123]>)\s*<\/p>/g,'$1');
+  html=html.replace(/<p>\s*(<ul>)/g,'$1');
+  html=html.replace(/(<\/ul>)\s*<\/p>/g,'$1');
+  return html;
+}
+
+function clearAll(){
+  if(!confirm('确认清空所有转写内容和纪要？'))return;
+  transcript=[];stopRecording();
+  document.getElementById('transcriptBox').innerHTML='<div class="transcript-empty" id="transcriptEmpty"><div class="icon">&#127897;</div><p>点击"开始录音"开始实时转写</p><p style="font-size:12px;color:#d9d9d9">需要Chrome并允许麦克风权限</p></div>';
+  document.getElementById('minutesBody').innerHTML='<div style="color:#bfbfbf;text-align:center;padding:40px">点击左侧"AI生成会议纪要"按钮</div>';
+  document.getElementById('durationDisplay').textContent='00:00:00';
+  document.getElementById('durationDisplay').classList.add('inactive');
+  document.getElementById('keywordList').innerHTML='<span style="color:#bfbfbf;font-size:12px">生成纪要后显示</span>';
+  document.getElementById('actionList').innerHTML='<div style="color:#bfbfbf;font-size:13px;text-align:center;padding:20px">生成纪要后自动提取</div>';
+  document.getElementById('meetingSummary').innerHTML='<span style="color:#bfbfbf">生成纪要后显示</span>';
+  startTime=null;showToast('已清空');
+}
+
+document.getElementById('minutesDate').textContent=new Date().toLocaleString('zh-CN');
+fetch(SERVER+'/ping').then(function(){document.getElementById('statusText').textContent='已连接';}).catch(function(){document.getElementById('statusText').textContent='离线模式';});
+  // ========== 文件上传与分析逻辑 ==========
+  document.getElementById('fileInput').addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const statusEl = document.getElementById('fileStatus');
+    const previewEl = document.getElementById('filePreview');
+    statusEl.textContent = '🔄 分析中...';
+    previewEl.innerHTML = '';
+
+    try {
+      // 1. 先上传文件（复用现有 upload logic）
+      const reader = new FileReader();
+      reader.onload = async function() {
+        const base64 = reader.result.split(',')[1];
+        const uploadResp = await fetch(SERVER + '/file-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: file.name, content: base64, mimeType: file.type })
+        });
+
+        const uploadData = await uploadResp.json();
+        if (!uploadData.success) throw new Error(uploadData.error);
+
+        // 2. 调用智能分析
+        const analyzeResp = await fetch(SERVER + '/analyze-file', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filePath: uploadData.path })
+        });
+
+        const analyzeData = await analyzeResp.json();
+        if (!analyzeData.success) throw new Error(analyzeData.error);
+
+        // 3. 显示结果
+        statusEl.innerHTML = `✅ 已识别 <strong>${file.name}</strong>（${analyzeData.type}）`;
+        previewEl.innerHTML = `<div style="background:#f9f9f9;padding:8px;border-radius:4px;font-family:monospace;">${escapeHtml(analyzeData.content.substring(0, 200))}${analyzeData.content.length > 200 ? '...' : ''}</div>`;
+        
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      statusEl.innerHTML = `❌ 失败：${err.message}`;
+      console.error('Attachment analysis failed:', err);
+    }
+  });
+
+  function escapeHtml(text) {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+</script>
+</body>
+</html>

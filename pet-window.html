@@ -1,0 +1,2306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>灵动AI 🐉</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+*::-webkit-scrollbar { width:10px; }
+*::-webkit-scrollbar-thumb { background:#4CAF50; border-radius:10px; border:2px solid rgba(255,255,255,0.3); }
+*::-webkit-scrollbar-thumb:hover { background:#388E3C; }
+*::-webkit-scrollbar-track { background:rgba(0,0,0,0.05); border-radius:10px; }
+html, body { width:100%; height:100%; background:transparent; overflow:hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif; }
+
+/* ===== 主布局：底部对齐 ===== */
+.container {
+  width:100%; height:100%; display:flex; flex-direction:column;
+  align-items:center; justify-content:flex-end; position:relative;
+  padding-bottom:20px;
+}
+
+/* ===== 面板层（固定在窗口上方，不遮挡宠物） ===== */
+.panel-layer {
+  position:absolute; top:8px; left:8px; right:8px;
+  max-height:calc(100% - 240px); /* 留出底部240px给宠物+工具栏+输入框 */
+  z-index:200; pointer-events:none;
+  display:flex; flex-direction:column;
+}
+
+/* ===== 通用面板样式 ===== */
+.panel { background:rgba(255,255,255,0.96); backdrop-filter:blur(16px); border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.15); display:none; flex-direction:column; pointer-events:auto; height:380px; overflow:hidden; animation:panelSlideIn 0.25s ease-out; }
+.panel.show { display:flex; }
+@keyframes panelSlideIn { 0%{opacity:0;transform:translateY(-8px);} 100%{opacity:1;transform:translateY(0);} }
+
+.panel-header {
+  padding:10px 14px; border-bottom:1px solid rgba(0,0,0,0.06);
+  display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+}
+.panel-header h3 { font-size:13px; font-weight:700; color:#333; margin:0; }
+.panel-header-actions { display:flex; gap:4px; align-items:center; }
+.panel-action-btn {
+  width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,0.04);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  font-size:12px; color:#999; transition:all 0.2s; flex-shrink:0;
+}
+.panel-action-btn:hover { background:rgba(0,0,0,0.08); color:#666; }
+.panel-action-btn.danger:hover { background:rgba(244,67,54,0.12); color:#e53935; }
+.panel-close {
+  width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,0.05);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  font-size:12px; color:#999; transition:all 0.2s; flex-shrink:0;
+}
+.panel-close:hover { background:rgba(244,67,54,0.12); color:#e53935; }
+
+.panel-body { flex:1; overflow-y:scroll !important; overflow-x:hidden; min-height:0; padding:4px 0; }
+
+.panel-section-title {
+  padding:6px 14px 3px; font-size:10px; color:#aaa; font-weight:600;
+  letter-spacing:0.5px; text-transform:uppercase; flex-shrink:0;
+}
+
+/* ===== 对话面板 ===== */
+#chatPanel { height:460px; width:340px; flex-direction:column; overflow:hidden; }
+#chatPanel.show { display:flex; }
+#chatPanel .panel-body { flex:1; overflow-y:scroll !important; overflow-x:hidden; min-height:0; padding:8px 12px; display:flex; flex-direction:column; gap:6px; }
+.chat-input-bar {
+  display:flex; gap:4px; padding:8px 10px; border-top:1px solid rgba(0,0,0,0.06); flex-shrink:0;
+  flex-wrap:wrap;
+}
+.chat-input-bar input {
+  flex:1; padding:7px 12px; border:1px solid #e0e0e0; border-radius:12px;
+  font-size:12px; outline:none; background:#fafafa; user-select:text;
+  min-width:0;
+}
+.chat-input-bar input:focus { border-color:#4CAF50; background:#fff; }
+.chat-input-bar button {
+  padding:7px 14px; border:none; border-radius:12px;
+  background:#4CAF50; color:#fff; font-size:12px; cursor:pointer; font-weight:600;
+  transition:background 0.2s;
+}
+.chat-input-bar button:hover { background:#43A047; }
+.chat-input-bar .pet-attach-btn {
+  padding:7px 10px; border:1px solid #e0e0e0; border-radius:12px;
+  background:#fff; color:#888; font-size:13px; cursor:pointer; font-weight:400;
+  transition:all 0.2s; flex-shrink:0;
+}
+.chat-input-bar .pet-attach-btn:hover { background:#f0f7f0; color:#4CAF50; border-color:#4CAF50; }
+.pet-attach-preview {
+  width:100%; display:flex; flex-wrap:wrap; gap:4px; padding:0;
+  max-height:60px; overflow-y:auto;
+}
+.pet-attach-preview:empty { display:none; }
+.pet-attach-item {
+  display:inline-flex; align-items:center; gap:3px; padding:2px 8px;
+  background:rgba(76,175,80,0.1); border-radius:6px; font-size:11px; color:#4CAF50;
+}
+.pet-attach-item .remove-attach { cursor:pointer; color:#999; font-size:12px; margin-left:2px; }
+.pet-attach-item .remove-attach:hover { color:#E53935; }
+
+.chat-msg { max-width:88%; padding:7px 11px; border-radius:12px; font-size:12px; line-height:1.6; word-wrap:break-word; word-break:break-all; white-space:pre-wrap; animation:msgIn 0.2s ease-out; flex-shrink:0; }
+@keyframes msgIn { 0%{opacity:0;transform:translateY(4px);} 100%{opacity:1;transform:translateY(0);} }
+.chat-msg.user {
+  align-self:flex-end; background:#4CAF50; color:#fff;
+  border-bottom-right-radius:4px;
+}
+.chat-msg.assistant {
+  align-self:flex-start; background:#f0f0f0; color:#222;
+  border-bottom-left-radius:4px;
+}
+.chat-msg.system {
+  align-self:center; background:transparent; color:#aaa; font-size:11px;
+  text-align:center; padding:2px 8px;
+}
+.typing-dots { display:inline-flex; gap:3px; }
+.typing-dots span {
+  width:5px; height:5px; border-radius:50%; background:#4CAF50;
+  animation: dotBounce 1.2s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay:0.2s; }
+.typing-dots span:nth-child(3) { animation-delay:0.4s; }
+@keyframes dotBounce { 0%,80%,100%{transform:translateY(0);opacity:0.4;} 40%{transform:translateY(-5px);opacity:1;} }
+
+/* ===== 技能面板 ===== */
+#skillPanel { max-height:calc(100% - 240px); }
+.skill-card {
+  display:flex; align-items:center; gap:10px; padding:7px 14px;
+  cursor:pointer; transition:background 0.15s; font-size:12px; color:#444;
+}
+.skill-card:hover { background:rgba(76,175,80,0.08); }
+.skill-card.active { background:rgba(76,175,80,0.12); color:#2E7D32; font-weight:600; }
+.skill-card .sc-icon { font-size:15px; width:20px; text-align:center; flex-shrink:0; }
+.skill-card .sc-info { flex:1; min-width:0; }
+.skill-card .sc-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.skill-card .sc-desc { font-size:10px; color:#aaa; margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ===== 待办面板 ===== */
+#todoPanel { max-height:calc(100% - 240px); }
+.todo-item {
+  display:flex; align-items:center; gap:8px; padding:6px 12px;
+  transition:background 0.15s; cursor:default; font-size:12px; color:#444;
+}
+.todo-item:hover { background:rgba(0,0,0,0.02); }
+.todo-item .check {
+  width:16px; height:16px; border-radius:50%; border:2px solid #ccc;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  transition:all 0.2s; flex-shrink:0;
+}
+.todo-item .check:hover { border-color:#4CAF50; }
+.todo-item.done .check { background:#4CAF50; border-color:#4CAF50; }
+.todo-item.done .check::after { content:'✓'; color:#fff; font-size:10px; font-weight:700; }
+.todo-item.done .text { text-decoration:line-through; color:#aaa; }
+.todo-item .text { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.todo-item .countdown { font-size:10px; font-weight:600; color:#FF9800; flex-shrink:0; min-width:48px; text-align:right; }
+.todo-item .countdown.urgent { color:#e53935; animation: countdownPulse 1s ease-in-out infinite; }
+@keyframes countdownPulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+.todo-item.reminder { border-left:3px solid #FF9800; padding-left:9px; }
+.todo-item .del {
+  width:16px; height:16px; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; font-size:10px; color:#ccc; cursor:pointer;
+  opacity:0; transition:all 0.15s; flex-shrink:0;
+}
+.todo-item:hover .del { opacity:1; }
+.todo-item .del:hover { color:#e53935; background:rgba(244,67,54,0.1); }
+.todo-empty { text-align:center; padding:20px; color:#bbb; font-size:12px; }
+.todo-add-bar {
+  display:flex; gap:4px; padding:8px 10px; border-top:1px solid rgba(0,0,0,0.06); flex-shrink:0;
+}
+.todo-add-bar input {
+  flex:1; padding:6px 10px; border:1px solid #e0e0e0; border-radius:10px;
+  font-size:12px; outline:none; user-select:text;
+}
+.todo-add-bar input:focus { border-color:#4CAF50; }
+.todo-add-bar button {
+  padding:6px 12px; border:none; border-radius:10px;
+  background:#4CAF50; color:#fff; font-size:12px; cursor:pointer;
+}
+
+/* ===== 流体球 80px ===== */
+.pet-wrapper { width:80px; height:80px; position:relative; cursor:grab; will-change:transform; flex-shrink:0; }
+.pet-wrapper:active { cursor:grabbing; }
+.inner-fluid {
+  position:absolute; top:3px; left:3px; right:3px; bottom:3px;
+  border-radius:50%; overflow:hidden; z-index:1;
+  background: linear-gradient(135deg, #a5d6a7, #c8e6c9);
+  transition: filter 0.4s ease;
+}
+.fluid-blob {
+  position:absolute; width:130%; height:130%; top:-15%; left:-15%;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(76,175,80,0.85), transparent 40%),
+    radial-gradient(circle at 70% 65%, rgba(129,199,132,0.8), transparent 40%);
+  animation: fluid-spin 8s linear infinite;
+}
+.fluid-blob-2 {
+  position:absolute; width:110%; height:110%; top:-5%; left:-5%;
+  background:
+    radial-gradient(circle at 60% 30%, rgba(165,214,167,0.4), transparent 35%),
+    radial-gradient(circle at 35% 70%, rgba(56,142,60,0.3), transparent 35%);
+  animation: fluid-spin-r 12s linear infinite;
+}
+.glass-shell {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  border-radius:50%; z-index:2;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.12), rgba(255,255,255,0.03));
+  box-shadow: inset -2px -2px 8px rgba(255,255,255,0.08), inset 2px 2px 8px rgba(255,255,255,0.35), 0px 2px 6px rgba(80,180,80,0.08);
+  border: 1px solid rgba(255,255,255,0.25);
+  transition: box-shadow 1s, border 1s;
+}
+.glass-shell::before {
+  content:''; position:absolute; top:12%; left:18%; width:28%; height:14%;
+  border-radius:50%; background:rgba(255,255,255,0.55); filter:blur(1px); transform:rotate(-40deg);
+}
+.glass-shell::after {
+  content:''; position:absolute; bottom:22%; right:20%; width:16%; height:10%;
+  border-radius:50%; background:rgba(255,255,255,0.2); filter:blur(1px); transform:rotate(25deg);
+}
+.eyes-container {
+  position:absolute; z-index:3; top:16%; left:10%; width:80%; height:50%;
+  display:flex; justify-content:center; align-items:center; gap:14px;
+  pointer-events:none; overflow:visible;
+}
+.eye {
+  width:13px; height:22px; background:white; border-radius:7px;
+  box-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.4);
+  transition: width 0.18s, height 0.18s, border-radius 0.18s, transform 0.18s cubic-bezier(0.25,1,0.5,1);
+  transform-origin: center center;
+}
+.blush { position:absolute; z-index:3; width:16px; height:9px; border-radius:50%;
+  background:rgba(255,130,130,0.25); filter:blur(3px); pointer-events:none; opacity:0.8; }
+.blush-l { top:58%; left:6%; }
+.blush-r { top:58%; right:6%; }
+.bub { position:absolute; border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), rgba(255,255,255,0.06));
+  border:1px solid rgba(255,255,255,0.12); z-index:0; opacity:0; pointer-events:none; }
+.bub-1 { width:5px; height:5px; left:-5px; top:60%; animation:bub 5s ease-in infinite 0s; }
+.bub-2 { width:3px; height:3px; right:-4px; top:40%; animation:bub 6.5s ease-in infinite 2s; }
+.particles { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; }
+
+/* ===== 宠物头顶元素（相对于pet-wrapper定位） ===== */
+.pet-top-layer {
+  position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
+  pointer-events:none; z-index:30; white-space:nowrap;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding-bottom:8px;
+}
+
+/* 气泡 */
+.bubble {
+  background:rgba(255,255,255,0.97); backdrop-filter:blur(12px);
+  border-radius:18px; padding:10px 16px; font-size:13px; color:#333;
+  max-width:200px; line-height:1.6; box-shadow:0 6px 24px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.04);
+  display:none; animation:bubbleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  word-wrap:break-word; pointer-events:auto;
+  text-align:center; font-weight:500;
+}
+.bubble.show { display:block; }
+@keyframes bubbleIn { 0%{transform:scale(0);opacity:0;} 100%{transform:scale(1);opacity:1;} }
+
+/* Agent 名牌 */
+.agent-badge {
+  background:rgba(255,255,255,0.92); backdrop-filter:blur(12px);
+  border-radius:20px; padding:4px 12px 4px 8px; font-size:11px; font-weight:600;
+  color:#2E7D32; box-shadow:0 2px 12px rgba(76,175,80,0.18), 0 0 0 1px rgba(76,175,80,0.1);
+  display:none; align-items:center; gap:5px; pointer-events:auto;
+  animation: badgeFloat 3s ease-in-out infinite;
+}
+.agent-badge.show { display:flex; }
+.agent-badge .badge-icon { font-size:13px; }
+.agent-badge .badge-name { max-width:100px; overflow:hidden; text-overflow:ellipsis; }
+.agent-badge .badge-close {
+  width:16px; height:16px; border-radius:50%; background:rgba(0,0,0,0.06);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  opacity:0; transform:scale(0.7); transition:all 0.2s; font-size:10px; color:#999;
+}
+.agent-badge:hover .badge-close { opacity:1; transform:scale(1); }
+.agent-badge .badge-close:hover { background:rgba(244,67,54,0.15); color:#e53935; }
+@keyframes badgeFloat { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-2px);} }
+
+/* 语音指示器 */
+.voice-indicator {
+  display:none; align-items:center; gap:5px;
+  background:rgba(244,67,54,0.9); backdrop-filter:blur(8px);
+  border-radius:14px; padding:3px 10px; font-size:10px; color:#fff; font-weight:600;
+  pointer-events:auto;
+}
+.voice-indicator.show { display:flex; }
+.voice-indicator .dot { width:5px; height:5px; border-radius:50%; background:#fff; animation: voicePulse 0.8s ease-in-out infinite; }
+@keyframes voicePulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.4;transform:scale(0.7);} }
+
+/* 空闲思绪 */
+.idle-thought {
+  background:rgba(255,255,255,0.85); backdrop-filter:blur(8px);
+  border-radius:10px; padding:4px 10px; font-size:10px; color:#888;
+  display:none; pointer-events:auto;
+  animation: thoughtFloat 4s ease-in-out infinite;
+}
+.idle-thought.show { display:block; }
+@keyframes thoughtFloat { 0%,100%{transform:translateY(0);opacity:0.8;} 50%{transform:translateY(-3px);opacity:1;} }
+
+/* 提醒气泡 */
+.reminder-bubble {
+  background:linear-gradient(135deg, rgba(255,152,0,0.95), rgba(255,183,77,0.95));
+  border-radius:12px; padding:8px 12px;
+  font-size:11px; color:#fff; max-width:200px; line-height:1.4;
+  box-shadow:0 4px 16px rgba(255,152,0,0.3); display:none;
+  animation: reminderIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events:auto;
+}
+.reminder-bubble.show { display:block; }
+.reminder-bubble .rem-title { font-weight:700; font-size:12px; margin-bottom:3px; }
+.reminder-bubble .rem-dismiss {
+  display:inline-block; margin-top:4px; padding:2px 8px; border-radius:6px;
+  background:rgba(255,255,255,0.25); cursor:pointer; font-size:10px;
+}
+@keyframes reminderIn { 0%{transform:scale(0);opacity:0;} 100%{transform:scale(1);opacity:1;} }
+
+/* 技能牌子 */
+.skill-sign {
+  background:#fff; border-radius:8px; padding:4px 12px; font-size:12px; font-weight:700;
+  color:#2E7D32; box-shadow:0 2px 8px rgba(0,0,0,0.15); display:none;
+  pointer-events:auto; animation: signWave 2s ease-in-out infinite;
+}
+.skill-sign.show { display:block; }
+@keyframes signWave { 0%,100%{transform:rotate(-2deg);} 50%{transform:rotate(2deg);} }
+
+/* ===== 工具栏 ===== */
+.toolbar {
+  display:flex; gap:8px; opacity:0; pointer-events:none; transition:opacity 0.25s;
+  z-index:20; margin-top:8px; flex-shrink:0;
+}
+.pet-wrapper:hover ~ .toolbar,
+.toolbar:hover { opacity:1; pointer-events:auto; }
+/* 也保持hover容器时显示 */
+.container:hover .toolbar { opacity:1; pointer-events:auto; }
+
+.tool-icon {
+  width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,0.92);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1); box-shadow:0 2px 8px rgba(0,0,0,0.12);
+}
+.tool-icon svg { width:14px; height:14px; stroke:#4CAF50; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.tool-icon:hover { transform:scale(1.15); box-shadow:0 3px 12px rgba(0,0,0,0.18); }
+.tool-icon:active { transform:scale(0.9); }
+.tool-icon.active-tool { background:rgba(76,175,80,0.15); box-shadow:0 0 0 2px rgba(76,175,80,0.3); }
+
+/* ===== 动画关键帧 ===== */
+@keyframes fluid-spin { 0%{transform:rotate(0) scale(1);} 50%{transform:rotate(180deg) scale(1.08);} 100%{transform:rotate(360deg) scale(1);} }
+@keyframes fluid-spin-r { 0%{transform:rotate(360deg) scale(1.05);} 50%{transform:rotate(180deg) scale(0.95);} 100%{transform:rotate(0) scale(1.05);} }
+@keyframes bub { 0%{opacity:0;transform:translateY(0) scale(0.3);} 15%{opacity:0.5;} 100%{opacity:0;transform:translateY(-30px) translateX(5px) scale(1);} }
+@keyframes squish { 0%{transform:scale(1,1);} 25%{transform:scale(1.15,0.85);} 50%{transform:scale(0.9,1.1);} 75%{transform:scale(1.05,0.95);} 100%{transform:scale(1,1);} }
+
+/* ===== 会议录制 UI ===== */
+.meeting-bar {
+  display:none; padding:8px 12px; background:rgba(244,67,54,0.08);
+  border-bottom:1px solid rgba(244,67,54,0.15); align-items:center; gap:8px; flex-shrink:0;
+}
+.meeting-bar.show { display:flex; }
+.meeting-bar .rec-dot {
+  width:10px; height:10px; border-radius:50%; background:#f44336;
+  animation: recPulse 1s ease-in-out infinite;
+}
+@keyframes recPulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+.meeting-bar .rec-text { font-size:12px; color:#f44336; font-weight:600; flex:1; }
+.meeting-bar .rec-time { font-size:11px; color:#999; font-family:monospace; }
+.meeting-bar button {
+  padding:4px 10px; border:1px solid #ddd; border-radius:8px;
+  background:#fff; font-size:11px; cursor:pointer; color:#666; transition:all 0.2s;
+}
+.meeting-bar button:hover { background:#f5f5f5; }
+.meeting-bar button.stop-btn { border-color:#f44336; color:#f44336; }
+.meeting-bar button.stop-btn:hover { background:rgba(244,67,54,0.08); }
+.meeting-bar button.gen-btn { border-color:#4CAF50; color:#4CAF50; font-weight:600; }
+.meeting-bar button.gen-btn:hover { background:rgba(76,175,80,0.08); }
+
+/* 会议按钮（在对话消息中） */
+.meeting-start-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:8px 16px; border:1px solid #4CAF50; border-radius:12px;
+  background:rgba(76,175,80,0.08); color:#4CAF50; font-size:12px;
+  font-weight:600; cursor:pointer; transition:all 0.2s; margin-top:6px;
+}
+.meeting-start-btn:hover { background:rgba(76,175,80,0.15); }
+
+
+/* 会议转写预览 */
+.meeting-transcript {
+  max-height:100px; overflow-y:auto; padding:4px 12px;
+  border-bottom:1px solid rgba(0,0,0,0.06); background:rgba(244,67,54,0.03); flex-shrink:0;
+}
+.transcript-line {
+  display:flex; gap:6px; padding:2px 0; font-size:11px; color:#666;
+  border-bottom:1px solid rgba(0,0,0,0.03);
+}
+.transcript-line .tl-time { color:#999; flex-shrink:0; width:40px; font-family:monospace; font-size:10px; }
+.transcript-line .tl-text { flex:1; word-break:break-all; }
+.transcript-live { opacity:0.8; }
+.transcript-live .tl-time { animation: pulse-dot 1s ease-in-out infinite; }
+@keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+</style>
+</head>
+<body>
+<div class="container" id="container">
+
+  <!-- ===== 面板层（固定在窗口上方） ===== -->
+  <div class="panel-layer" id="panelLayer">
+    <!-- 对话面板 -->
+    <div class="panel" id="chatPanel">
+      <div class="panel-header">
+        <h3>💬 对话</h3>
+        <div class="panel-header-actions">
+          <span class="panel-action-btn" onclick="clearChatHistory()" title="清空聊天记录">🧹</span>
+          <span class="panel-close" onclick="closePanel('chat')">✕</span>
+        </div>
+      </div>
+      <!-- 会议录制栏（在对话面板内部） -->
+      <div class="meeting-bar" id="meetingBar">
+        <span class="rec-dot"></span>
+        <span class="rec-text" id="meetingStatus">录制中</span>
+        <span class="rec-time" id="meetingTime">00:00</span>
+        <button id="meetingPauseBtn" onclick="toggleMeetingPause()">暂停</button>
+        <button class="stop-btn" id="meetingStopBtn" onclick="stopMeeting()">结束</button>
+        <button class="gen-btn" id="meetingGenBtn" onclick="generateMeetingNotes()" style="display:none">生成会议纪要</button>
+      </div>
+      <!-- 实时转写预览 -->
+      <div class="meeting-transcript" id="meetingTranscript" style="display:none">
+        <div class="transcript-scroll" id="transcriptScroll"></div>
+      </div>
+      <div class="panel-body" id="chatMessages"></div>
+      <div class="chat-input-bar">
+        <div class="pet-attach-preview" id="petAttachPreview"></div>
+        <input type="text" id="chatInput" placeholder="输入消息..." autocomplete="off">
+        <button class="pet-attach-btn" onclick="triggerPetAttach()" title="上传图片">🖼</button>
+        <button onclick="sendChat()">发送</button>
+        <input type="file" id="petAttachInput" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,.json,.xml,.html,.log,.py,.js,.ts,.css,.sql,.yaml,.yml,.ini,.conf,.sh,.bat,.ps1" multiple style="display:none" onchange="handlePetAttachSelect(event)">
+      </div>
+    </div>
+
+    <!-- 技能面板 -->
+    <div class="panel" id="skillPanel">
+      <div class="panel-header">
+        <h3>⚡ 技能</h3>
+        <span class="panel-close" onclick="closePanel('skill')">✕</span>
+      </div>
+      <div class="panel-body" id="skillPanelBody"></div>
+    </div>
+
+    <!-- 待办面板 -->
+    <div class="panel" id="todoPanel">
+      <div class="panel-header">
+        <h3>✅ 待办</h3>
+        <span class="panel-close" onclick="closePanel('todo')">✕</span>
+      </div>
+      <div class="panel-body" id="todoList"></div>
+      <div class="todo-add-bar">
+        <input type="text" id="todoInput" placeholder="添加待办..." autocomplete="off">
+        <button onclick="addTodo()">添加</button>
+      </div>
+      <!-- 待办日历选择器 -->
+      <div style="padding:4px 10px 8px; flex-shrink:0; display:flex; gap:4px; align-items:center;">
+        <label style="font-size:10px; color:#999;">提醒:</label>
+        <input type="datetime-local" id="todoReminderTime" style="flex:1; font-size:11px; border:1px solid #e0e0e0; border-radius:6px; padding:3px 6px; outline:none;">
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 宠物 + 头顶元素 ===== -->
+  <div style="position:relative; flex-shrink:0;">
+    <!-- 头顶层 -->
+    <div class="pet-top-layer" id="petTopLayer">
+      <div class="reminder-bubble" id="reminderBubble">
+        <div class="rem-title" id="remTitle"></div>
+        <div id="remBody"></div>
+        <span class="rem-dismiss" onclick="dismissReminder()">知道了</span>
+      </div>
+      <div class="idle-thought" id="idleThought"></div>
+      <div class="agent-badge" id="agentBadge">
+        <span class="badge-icon">🤖</span>
+        <span class="badge-name" id="badgeName"></span>
+        <span class="badge-close" id="badgeClose" title="退出 Agent">✕</span>
+      </div>
+      <div class="voice-indicator" id="voiceIndicator">
+        <span class="dot"></span> 聆听中...
+      </div>
+      <div class="skill-sign" id="skillSign"></div>
+      <div class="bubble" id="bubble"></div>
+    </div>
+
+    <!-- 宠物本体 -->
+    <div class="pet-wrapper" id="pet">
+      <div class="inner-fluid" id="fluid">
+        <div class="fluid-blob" id="blob1"></div>
+        <div class="fluid-blob-2" id="blob2"></div>
+      </div>
+      <div class="glass-shell" id="shell"></div>
+      <div class="eyes-container">
+        <div class="eye" id="eyeL"></div>
+        <div class="eye" id="eyeR"></div>
+      </div>
+      <div class="blush blush-l" id="blushL"></div>
+      <div class="blush blush-r" id="blushR"></div>
+      <div class="bub bub-1"></div>
+      <div class="bub bub-2"></div>
+      <div class="particles" id="particles"></div>
+    </div>
+  </div>
+
+  <!-- 工具栏 -->
+  <div class="toolbar" id="toolbar">
+    <div class="tool-icon" id="btnChat" title="对话" onclick="togglePanel('chat')">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </div>
+    <div class="tool-icon" id="btnSkill" title="技能" onclick="togglePanel('skill')">
+      <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    </div>
+    <div class="tool-icon" id="btnTodo" title="待办" onclick="openTodoPanel()">
+      <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    </div>
+    <div class="tool-icon" title="语音" onclick="toggleVoice()">
+      <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </div>
+    <div class="tool-icon" title="设置" onclick="openSettings()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 全局错误捕获 =====
+window.onerror = function(msg, url, line, col, error) {
+  try { require('fs').appendFileSync(require('path').join(__dirname, 'data', 'pet-debug.log'),
+    '[' + new Date().toLocaleTimeString() + '][ERROR] ' + msg + ' at ' + url + ':' + line + '\n'); } catch(e) {}
+};
+
+// ===== IPC =====
+var ipcRenderer = require('electron').ipcRenderer;
+var _fs = require('fs');
+var _logFile = require('path').join(__dirname, 'data', 'pet-debug.log');
+function _dbg(msg) {
+  var line = '[' + new Date().toLocaleTimeString() + '] ' + msg + '\n';
+  console.log('[Pet]', msg);
+  try { _fs.appendFileSync(_logFile, line); } catch(e) {}
+}
+_dbg('Script v3.0 loaded');
+
+// ===== DOM =====
+var pet = document.getElementById('pet');
+var eyeL = document.getElementById('eyeL');
+var eyeR = document.getElementById('eyeR');
+var fluid = document.getElementById('fluid');
+var blob1 = document.getElementById('blob1');
+var blob2 = document.getElementById('blob2');
+var shell = document.getElementById('shell');
+var particlesEl = document.getElementById('particles');
+var bubbleEl = document.getElementById('bubble');
+var signEl = document.getElementById('skillSign');
+var chatPanel = document.getElementById('chatPanel');
+var chatMessages = document.getElementById('chatMessages');
+var chatInput = document.getElementById('chatInput');
+var skillPanel = document.getElementById('skillPanel');
+var skillPanelBody = document.getElementById('skillPanelBody');
+var todoPanel = document.getElementById('todoPanel');
+var todoList = document.getElementById('todoList');
+var todoInput = document.getElementById('todoInput');
+var agentBadge = document.getElementById('agentBadge');
+var badgeName = document.getElementById('badgeName');
+var badgeClose = document.getElementById('badgeClose');
+var voiceIndicator = document.getElementById('voiceIndicator');
+var idleThought = document.getElementById('idleThought');
+var reminderBubble = document.getElementById('reminderBubble');
+var remTitle = document.getElementById('remTitle');
+var remBody = document.getElementById('remBody');
+
+
+// ===== 输入框 Enter 键绑定 =====
+chatInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+todoInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); addTodo(); }
+});
+
+// ===== 面板管理（互斥，同时只显示一个） =====
+var activePanel = null;
+function togglePanel(name) {
+  // 技能面板只对灵动AI后端开放
+  if (name === 'skill' && currentBackendType !== 'lingdong') {
+    showBubble('⚡ 技能面板仅在灵动AI后端下可用');
+    setTimeout(hideBubble, 2000);
+    return;
+  }
+  if (activePanel === name) { closePanel(name); return; }
+  closeAllPanels();
+  activePanel = name;
+  document.getElementById(name + 'Panel').classList.add('show');
+  document.getElementById('btn' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active-tool');
+  // 面板特定初始化
+  if (name === 'chat') { chatInput.focus(); }
+  if (name === 'skill') { renderSkillPanel(); }
+  if (name === 'todo') { loadTodos(); }
+  _dbg('Panel opened: ' + name);
+}
+function closePanel(name) {
+  document.getElementById(name + 'Panel').classList.remove('show');
+  var btn = document.getElementById('btn' + name.charAt(0).toUpperCase() + name.slice(1));
+  if (btn) btn.classList.remove('active-tool');
+  if (activePanel === name) activePanel = null;
+  _dbg('Panel closed: ' + name + ', activePanel now: ' + activePanel);
+}
+function closeAllPanels() {
+  ['chat','skill','todo'].forEach(function(n) { closePanel(n); });
+}
+
+// ===== 60fps 浮动动画 =====
+var t = 0, squishing = false, targetScale = 1, curScale = 1, breathExtra = 0;
+var deepBreathPhase = 0, fidgetSeed = Math.random() * 100;
+function loop() {
+  t += 0.016;
+  curScale += (targetScale - curScale) * 0.08;
+  var floatY = Math.sin(t*1.3)*3 + Math.sin(t*0.67)*1.5 + Math.sin(t*2.3)*0.5;
+  var floatR = Math.sin(t*0.9)*0.3 + Math.sin(t*0.37)*0.2;
+  var breathScale = 1 + Math.sin(t*2)*0.01 + Math.sin(t*0.8)*0.005;
+  if (deepBreathPhase > 0) { breathScale += Math.sin(deepBreathPhase)*0.025; deepBreathPhase += 0.04; if(deepBreathPhase>Math.PI) deepBreathPhase=0; }
+  var fidgetX = Math.sin(t*0.23+fidgetSeed)*0.5;
+  if (!squishing) {
+    pet.style.transform = 'translateX('+fidgetX+'px) translateY('+floatY+') rotate('+floatR+'deg) scale('+(curScale*breathScale)+')';
+  }
+  requestAnimationFrame(loop);
+}
+loop();
+setInterval(function() { if(deepBreathPhase===0 && Math.random()<0.5) deepBreathPhase=0.01; }, 25000);
+
+// ===== 眼睛表情系统 =====
+function setEyes(L, R, speed) {
+  var dur = speed==='snap'?'0s':speed==='fast'?'0.08s':speed==='slow'?'0.45s':'0.18s';
+  var ease = speed==='snap'||speed==='fast'?'linear':'cubic-bezier(0.25,1,0.5,1)';
+  var tr = 'width '+dur+' '+ease+', height '+dur+' '+ease+', border-radius '+dur+' '+ease+', transform '+dur+' '+ease;
+  var d = {w:13,h:22,br:'7px',tx:0,ty:0,sx:1,sy:1,rot:0};
+  var l = Object.assign({},d,L), r = R ? Object.assign({},d,R) : Object.assign({},l);
+  eyeL.style.transition = tr; eyeR.style.transition = tr;
+  eyeL.style.cssText = 'width:'+l.w+'px;height:'+l.h+'px;border-radius:'+l.br+';transform:translate('+l.tx+'px,'+l.ty+'px) scale('+l.sx+','+l.sy+') rotate('+l.rot+'deg);background:white;box-shadow:0 0 8px rgba(255,255,255,0.9),0 0 16px rgba(255,255,255,0.4);transition:'+tr;
+  eyeR.style.cssText = 'width:'+r.w+'px;height:'+r.h+'px;border-radius:'+r.br+';transform:translate('+r.tx+'px,'+r.ty+'px) scale('+r.sx+','+r.sy+') rotate('+r.rot+'deg);background:white;box-shadow:0 0 8px rgba(255,255,255,0.9),0 0 16px rgba(255,255,255,0.4);transition:'+tr;
+}
+var EXPR = {
+  normal:    function() { setEyes({w:13,h:22,br:'7px'}); },
+  blink:     function() { setEyes({w:14,h:3,br:'3px'},null,'snap'); },
+  happy:     function() { setEyes({w:15,h:8,br:'8px 8px 3px 3px',ty:1},null,'fast'); },
+  superHappy:function() { setEyes({w:17,h:6,br:'9px 9px 3px 3px',ty:1,sx:1.1},null,'fast'); },
+  surprised: function() { setEyes({w:15,h:24,br:'8px'},null,'fast'); },
+  wink:      function() { setEyes({w:15,h:8,br:'8px 8px 3px 3px',ty:1},{w:13,h:22,br:'7px'},'fast'); },
+  winkR:     function() { setEyes({w:13,h:22,br:'7px'},{w:15,h:8,br:'8px 8px 3px 3px',ty:1},'fast'); },
+  sparkle:   function() { setEyes({w:14,h:14,br:'4px',rot:45},null,'fast'); },
+  curious:   function() { setEyes({w:11,h:18,br:'6px',ty:-1},{w:15,h:24,br:'8px',ty:-1}); },
+  thinking:  function() { setEyes({w:12,h:19,br:'6px',ty:-3}); },
+  sad:       function() { setEyes({w:12,h:18,br:'6px',ty:3,sy:0.9}); },
+  angry:     function() { setEyes({w:14,h:16,br:'4px 7px 7px 4px',ty:-2,rot:-12},{w:14,h:16,br:'7px 4px 4px 7px',ty:-2,rot:12}); },
+  sleepy:    function() { setEyes({w:14,h:5,br:'5px',ty:2},null,'slow'); },
+  love:      function() { setEyes({w:16,h:15,br:'8px 1px 8px 1px',rot:45,sx:1.1}); },
+  talking:   function() { setEyes({w:12,h:19,br:'6px'}); },
+  content:   function() { setEyes({w:15,h:9,br:'8px 8px 5px 5px',sx:1.05},null,'slow'); },
+  focus:     function() { setEyes({w:11,h:20,br:'5px',ty:-1}); },
+  smug:      function() { setEyes({w:13,h:8,br:'7px 7px 3px 3px',ty:1},{w:11,h:17,br:'6px',tx:3}); },
+  giggle:    function() { setEyes({w:15,h:8,br:'8px 8px 3px 3px',ty:1,rot:-8},{w:15,h:8,br:'8px 8px 3px 3px',ty:1,rot:8}); },
+  wow:       function() { setEyes({w:18,h:18,br:'9px'},null,'fast'); },
+  daydream:  function() { setEyes({w:15,h:23,br:'8px',ty:-3,sx:0.95},null,'drift'); },
+  grab:      function() { setEyes({w:16,h:16,br:'8px',rot:15},{w:16,h:16,br:'8px',rot:-15},'fast'); },
+};
+
+// ===== 情绪系统 =====
+var MOODS = {
+  idle:      { fluid:'linear-gradient(135deg,#a5d6a7,#c8e6c9)', b1:'radial-gradient(circle at 30% 30%,rgba(76,175,80,0.85),transparent 40%),radial-gradient(circle at 70% 65%,rgba(129,199,132,0.8),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(165,214,167,0.4),transparent 35%),radial-gradient(circle at 35% 70%,rgba(56,142,60,0.3),transparent 35%)', glow:'0 0 40px rgba(76,175,80,0.25),0 0 80px rgba(76,175,80,0.1)', eyes:'normal', scale:1 },
+  happy:     { fluid:'linear-gradient(135deg,#fff9c4,#fff3e0)', b1:'radial-gradient(circle at 30% 30%,rgba(255,193,7,0.85),transparent 40%),radial-gradient(circle at 70% 65%,rgba(255,152,0,0.8),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(255,235,59,0.4),transparent 35%),radial-gradient(circle at 35% 70%,rgba(255,183,77,0.3),transparent 35%)', glow:'0 0 40px rgba(255,193,7,0.3)', eyes:'happy', scale:1.05 },
+  talking:   { fluid:'linear-gradient(135deg,#c8e6c9,#e8f5e9)', b1:'radial-gradient(circle at 30% 30%,rgba(46,125,50,0.85),transparent 40%),radial-gradient(circle at 70% 65%,rgba(102,187,106,0.8),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(165,214,167,0.4),transparent 35%),radial-gradient(circle at 35% 70%,rgba(56,142,60,0.3),transparent 35%)', glow:'0 0 40px rgba(46,125,50,0.3)', eyes:'talking', scale:1 },
+  thinking:  { fluid:'linear-gradient(135deg,#d1c4e9,#ede7f6)', b1:'radial-gradient(circle at 30% 30%,rgba(103,58,183,0.85),transparent 40%),radial-gradient(circle at 70% 65%,rgba(123,104,238,0.8),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(179,157,219,0.4),transparent 35%),radial-gradient(circle at 35% 70%,rgba(94,53,177,0.3),transparent 35%)', glow:'0 0 40px rgba(123,104,238,0.3)', eyes:'thinking', scale:1 },
+  sleepy:    { fluid:'linear-gradient(135deg,#e0e0e0,#eeeeee)', b1:'radial-gradient(circle at 30% 30%,rgba(158,158,158,0.85),transparent 40%),radial-gradient(circle at 70% 65%,rgba(189,189,189,0.8),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(200,200,200,0.4),transparent 35%),radial-gradient(circle at 35% 70%,rgba(140,140,140,0.3),transparent 35%)', glow:'0 0 30px rgba(158,158,158,0.2)', eyes:'sleepy', scale:0.97 },
+  sad:       { fluid:'linear-gradient(135deg,#90caf9,#bbdefb)', b1:'radial-gradient(circle at 30% 30%,rgba(30,136,229,0.85),transparent 40%),radial-gradient(circle at 70% 65%,rgba(66,165,245,0.8),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(144,202,249,0.4),transparent 35%),radial-gradient(circle at 35% 70%,rgba(21,101,192,0.3),transparent 35%)', glow:'0 0 40px rgba(66,165,245,0.3)', eyes:'sad', scale:0.96 },
+  angry:     { fluid:'linear-gradient(135deg,#ffcdd2,#ffebee)', b1:'radial-gradient(circle at 30% 30%,rgba(229,57,53,0.85),transparent 40%),radial-gradient(circle at 70% 65%,rgba(244,67,54,0.8),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(255,138,128,0.4),transparent 35%),radial-gradient(circle at 35% 70%,rgba(211,47,47,0.3),transparent 35%)', glow:'0 0 50px rgba(244,67,54,0.35)', eyes:'angry', scale:1.03 },
+  surprised: { fluid:'linear-gradient(135deg,#fff9c4,#fff3e0)', b1:'radial-gradient(circle at 30% 30%,rgba(255,215,0,0.85),transparent 40%),radial-gradient(circle at 70% 65%,rgba(255,165,0,0.8),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(255,235,59,0.4),transparent 35%),radial-gradient(circle at 35% 70%,rgba(255,87,34,0.3),transparent 35%)', glow:'0 0 50px rgba(255,215,0,0.35)', eyes:'surprised', scale:1.06 },
+  grabbed:   { fluid:'linear-gradient(135deg,#ffcc80,#ffe0b2)', b1:'radial-gradient(circle at 30% 30%,rgba(255,152,0,0.85),transparent 40%),radial-gradient(circle at 70% 65%,rgba(255,183,77,0.8),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(255,213,79,0.4),transparent 35%),radial-gradient(circle at 35% 70%,rgba(245,124,0,0.3),transparent 35%)', glow:'0 0 40px rgba(255,152,0,0.3)', eyes:'grab', scale:1.08 },
+  // 🟠 待办临近（10分钟内）
+  'todo-warn': { fluid:'linear-gradient(135deg,#ffcc80,#ffe0b2)', b1:'radial-gradient(circle at 30% 30%,rgba(255,152,0,0.85),transparent 40%),radial-gradient(circle at 70% 65%,rgba(255,183,77,0.8),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(255,213,79,0.4),transparent 35%),radial-gradient(circle at 35% 70%,rgba(245,124,0,0.3),transparent 35%)', glow:'0 0 50px rgba(255,152,0,0.4),0 0 100px rgba(255,152,0,0.15)', eyes:'surprised', scale:1.02 },
+  // 🔴 待办已过期
+  'todo-overdue': { fluid:'linear-gradient(135deg,#ef9a9a,#ffcdd2)', b1:'radial-gradient(circle at 30% 30%,rgba(229,57,53,0.85),transparent 40%),radial-gradient(circle at 70% 65%,rgba(244,67,54,0.8),transparent 40%)', b2:'radial-gradient(circle at 60% 30%,rgba(255,138,128,0.4),transparent 35%),radial-gradient(circle at 35% 70%,rgba(211,47,47,0.3),transparent 35%)', glow:'0 0 50px rgba(244,67,54,0.45),0 0 100px rgba(244,67,54,0.2)', eyes:'sad', scale:0.98 },
+};
+var currentMood = 'idle';
+function setMood(mood) {
+  var m = MOODS[mood] || MOODS.idle;
+  currentMood = mood;
+  fluid.style.background = m.fluid;
+  blob1.style.background = m.b1;
+  blob2.style.background = m.b2;
+  shell.style.boxShadow = m.glow + ', inset -2px -2px 8px rgba(255,255,255,0.08), inset 2px 2px 8px rgba(255,255,255,0.35)';
+  targetScale = m.scale;
+  if (EXPR[m.eyes]) EXPR[m.eyes]();
+}
+
+// ===== 鼠标跟随 =====
+var mouseTracking = true;
+document.addEventListener('mousemove', function(e) {
+  if (!mouseTracking) return;
+  var rect = pet.getBoundingClientRect();
+  var cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+  var dx = Math.max(-3, Math.min(3, (e.clientX-cx)/window.innerWidth*8));
+  var dy = Math.max(-3, Math.min(3, (e.clientY-cy)/window.innerHeight*8));
+  eyeL.style.transform = 'translate('+dx+'px,'+dy+'px)';
+  eyeR.style.transform = 'translate('+dx+'px,'+dy+'px)';
+});
+
+// ===== 眨眼 =====
+function doBlink() {
+  if (currentMood==='sleepy'||currentMood==='happy') { schedBlink(); return; }
+  mouseTracking = false;
+  EXPR.blink();
+  setTimeout(function() { EXPR.normal(); setTimeout(function() { mouseTracking = true; }, 50); }, 80);
+  schedBlink();
+}
+function schedBlink() { setTimeout(doBlink, 2500+Math.random()*5000); }
+schedBlink();
+
+// ===== 待办状态变色 =====
+var _todoStatusTimer = null;
+var _todoStatusMood = 'idle'; // 当前待办状态mood
+
+function checkTodoStatus() {
+  ipcRenderer.invoke('todo-load').then(function(todos) {
+    if (!todos || !todos.length) {
+      _todoStatusMood = 'idle';
+      _applyTodoMood();
+      return;
+    }
+    var now = Date.now();
+    var hasOverdue = false;
+    var hasWarn = false;
+    for (var i = 0; i < todos.length; i++) {
+      var t = todos[i];
+      if (t.done || t.archived) continue;
+      if (!t.due_date || !t.due_time) continue;
+      var dueStr = t.due_date + 'T' + t.due_time + ':00';
+      var dueTime = new Date(dueStr).getTime();
+      if (isNaN(dueTime)) continue;
+      var diff = dueTime - now;
+      if (diff < 0) {
+        hasOverdue = true;
+      } else if (diff <= 10 * 60 * 1000) {
+        hasWarn = true;
+      }
+    }
+    var newMood = hasOverdue ? 'todo-overdue' : (hasWarn ? 'todo-warn' : 'idle');
+    if (newMood !== _todoStatusMood) {
+      _dbg('[TodoStatus] Mood change: ' + _todoStatusMood + ' → ' + newMood + ' (overdue=' + hasOverdue + ', warn=' + hasWarn + ')');
+    }
+    _todoStatusMood = newMood;
+    _applyTodoMood();
+  }).catch(function(e) {
+    _dbg('[TodoStatus] Error: ' + e.message);
+  });
+}
+
+function _applyTodoMood() {
+  // 只在非交互状态下应用待办颜色（不覆盖拖拽、对话等临时mood）
+  var interactiveMoods = ['grabbed', 'thinking', 'talking', 'surprised', 'happy'];
+  if (interactiveMoods.indexOf(currentMood) === -1) {
+    if (currentMood !== _todoStatusMood) {
+      setMood(_todoStatusMood);
+    }
+  }
+}
+
+// 每10秒检查一次待办状态
+checkTodoStatus();
+_todoStatusTimer = setInterval(checkTodoStatus, 10000);
+
+// 监听待办变化时立即重新检查
+ipcRenderer.on('todo-changed', function() {
+  checkTodoStatus();
+});
+
+// ===== 拖拽 =====
+var isDrag = false, startX, startY, offX, offY;
+var grabbedTexts = ['放我下来！','啊啊啊！','你干嘛！','头好晕！','救命！','不要甩我！'];
+pet.addEventListener('mousedown', function(e) { isDrag=false; startX=e.screenX; startY=e.screenY; offX=e.clientX; offY=e.clientY; });
+document.addEventListener('mousemove', function(e) {
+  if (startX !== undefined && (Math.abs(e.screenX-startX)>3 || Math.abs(e.screenY-startY)>3)) {
+    isDrag = true;
+    setMood('grabbed');
+    ipcRenderer.send('pet-drag', { x:e.screenX, y:e.screenY, ox:offX, oy:offY });
+  }
+});
+document.addEventListener('mouseup', function() {
+  if (isDrag) {
+    setMood('idle');
+    showBubble(grabbedTexts[Math.floor(Math.random()*grabbedTexts.length)]);
+    setTimeout(function() { hideBubble(); }, 2000);
+  }
+  setTimeout(function() { isDrag=false; startX=undefined; }, 30);
+});
+
+// ===== 点击 =====
+var clickCount = 0, clickTimer = null;
+pet.addEventListener('click', function() {
+  if (isDrag) return;
+  clickCount++;
+  clearTimeout(clickTimer);
+  squishing = true;
+  pet.style.animation = 'squish 0.35s cubic-bezier(0.34,1.56,0.64,1)';
+  pet.style.filter = 'brightness(1.15)';
+  setTimeout(function() { pet.style.animation=''; pet.style.filter=''; squishing=false; }, 350);
+  spawnParticles();
+
+  if (clickCount >= 3) {
+    EXPR.superHappy();
+    showBubble('三击！超开心～ 🎉');
+    setTimeout(function() { resetExpr(); hideBubble(); }, 2000);
+    clickCount = 0;
+  } else {
+    var rr = ['happy','wink','winkR','surprised','curious','giggle','sparkle','wow'];
+    EXPR[rr[Math.floor(Math.random()*rr.length)]]();
+    var tips = ['你好呀~','今天想做什么？','戳我干嘛~','嘻嘻！','灵动AI在线！','有什么事吗？'];
+    showBubble(tips[Math.floor(Math.random()*tips.length)]);
+    setTimeout(function() { resetExpr(); hideBubble(); }, 2500);
+    clickTimer = setTimeout(function() { clickCount=0; }, 800);
+  }
+});
+
+// 右键 → 技能面板
+pet.addEventListener('contextmenu', function(e) { e.preventDefault(); togglePanel('skill'); });
+
+function resetExpr() { setMood(currentMood); mouseTracking = true; }
+function spawnParticles() {
+  var colors = ['#4CAF50','#81C784','#A5D6A7','#FFD54F','#fff','#66BB6A'];
+  for (var i=0;i<8;i++) {
+    var p = document.createElement('div');
+    var sz = 2+Math.random()*3, a = (Math.PI*2/8)*i+Math.random()*0.4, dist = 15+Math.random()*25;
+    p.style.cssText = 'position:absolute;border-radius:50%;pointer-events:none;width:'+sz+'px;height:'+sz+'px;background:'+colors[Math.floor(Math.random()*colors.length)]+';left:50%;top:50%;opacity:1;transition:transform 0.4s ease-out,opacity 0.4s ease-out;';
+    particlesEl.appendChild(p);
+    requestAnimationFrame(function(pp,aa,dd) { return function() { pp.style.transform='translate('+Math.cos(aa)*dd+'px,'+Math.sin(aa)*dd+'px)'; pp.style.opacity='0'; }; }(p,a,dist));
+    setTimeout(function(pp) { return function() { pp.remove(); }; }(p), 450);
+  }
+}
+
+// ===== 气泡（宠物头顶） =====
+function showBubble(text) { bubbleEl.textContent = text; bubbleEl.classList.add('show'); }
+function hideBubble() { bubbleEl.classList.remove('show'); }
+
+// ===== 对话系统 =====
+var chatHistory = [];
+var MAX_HISTORY = 20;
+var isAiThinking = false;
+
+function addChatMsg(role, text) {
+  var msg = document.createElement('div');
+  msg.className = 'chat-msg ' + role;
+  msg.textContent = text;
+  chatMessages.appendChild(msg);
+  // 强制滚动到底部
+  setTimeout(function() { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+function showTyping() {
+  var msg = document.createElement('div');
+  msg.className = 'chat-msg assistant';
+  msg.id = 'typingIndicator';
+  msg.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
+  chatMessages.appendChild(msg);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+function removeTyping() {
+  var el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+function pushHistory(role, content) {
+  chatHistory.push({ role: role, content: content });
+  if (chatHistory.length > MAX_HISTORY * 2) chatHistory = chatHistory.slice(-MAX_HISTORY * 2);
+}
+var petName = '小宠'; // 默认，启动时从设置加载
+ipcRenderer.invoke('pet-settings-load').then(function(settings) {
+  if (settings && settings.pet && settings.pet.name) petName = settings.pet.name;
+});
+
+function getContextMessages(userText) {
+  var sysPrompt = '你叫"' + petName + '"，是一个可爱的桌面宠物AI助手。回答要简洁有趣（150字以内），语气活泼可爱，像朋友聊天一样。';
+  // Agent模式：直接使用Agent的systemPrompt，不添加润色指令
+  if (currentAgentId !== 'pet-default' && agents.length > 0) {
+    var agent = agents.find(function(a) { return a.id === currentAgentId; });
+    if (agent && agent.systemPrompt) {
+      sysPrompt = agent.systemPrompt;
+    } else if (agent) {
+      sysPrompt = '你是' + (agent.name || 'Agent') + '。' + (agent.description || '');
+    }
+  }
+  var msgs = [{ role: 'system', content: sysPrompt }];
+
+  // 保留最近 3 张图片（支持多图对比），更早的图片消息降级为文本
+  var MAX_IMAGES = 3;
+  var historySlice = chatHistory.slice(-12);
+  var imageIndices = [];
+  for (var k = historySlice.length - 1; k >= 0; k--) {
+    var hm = historySlice[k];
+    if (hm.role === 'user' && Array.isArray(hm.content) &&
+        hm.content.some(function(c) { return c.type === 'image_url'; })) {
+      imageIndices.push(k);
+      if (imageIndices.length >= MAX_IMAGES) break;
+    }
+  }
+  var keepThreshold = imageIndices.length > 0 ? imageIndices[imageIndices.length - 1] : -1;
+
+  for (var i = 0; i < historySlice.length; i++) {
+    var msg = historySlice[i];
+    if (msg.role === 'user' && Array.isArray(msg.content)) {
+      if (i < keepThreshold) {
+        var textOnly = msg.content.filter(function(c) { return c.type === 'text'; }).map(function(c) { return c.text; }).join(' ');
+        msgs.push({ role: 'user', content: textOnly || '[用户发送了图片]' });
+      } else {
+        msgs.push(msg);
+      }
+    } else {
+      msgs.push(msg);
+    }
+  }
+  // 添加当前消息
+  msgs.push({ role: 'user', content: userText });
+  return msgs;
+}
+
+// ===== 流式内容处理 =====
+var streamMsgEl = null;
+var streamContent = '';
+
+function resetStream() {
+  streamMsgEl = null;
+  streamContent = '';
+}
+
+if (window.electronAPI && window.electronAPI.onStreamChunk) {
+window.electronAPI.onStreamChunk(function(data) {
+  if (data.type === 'content') {
+    if (!streamMsgEl) {
+      removeTyping();
+      streamMsgEl = document.createElement('div');
+      streamMsgEl.className = 'chat-msg assistant';
+      streamMsgEl.id = 'streamingMsg';
+      chatMessages.appendChild(streamMsgEl);
+    }
+    streamContent += data.text;
+    streamMsgEl.textContent = streamContent;
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  } else if (data.type === 'tool') {
+    if (!streamMsgEl) {
+      removeTyping();
+      streamMsgEl = document.createElement('div');
+      streamMsgEl.className = 'chat-msg assistant';
+      streamMsgEl.id = 'streamingMsg';
+      chatMessages.appendChild(streamMsgEl);
+    }
+    streamContent += data.text;
+    streamMsgEl.textContent = streamContent;
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+});
+} else {
+  // contextIsolation=false, use ipcRenderer directly
+  ipcRenderer.on('pet-stream-chunk', function(event, data) {
+    if (data.type === 'content') {
+      if (!streamMsgEl) {
+        removeTyping();
+        streamMsgEl = document.createElement('div');
+        streamMsgEl.className = 'chat-msg assistant';
+        streamMsgEl.id = 'streamingMsg';
+        chatMessages.appendChild(streamMsgEl);
+      }
+      streamContent += data.text;
+      streamMsgEl.textContent = streamContent;
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  });
+}
+
+function clearChatHistory() {
+  chatMessages.innerHTML = '';
+  addChatMsg('system', '🧹 聊天记录已清空（记忆保留）');
+  setTimeout(hideBubble, 2000);
+}
+
+// ===== 附件系统（图片+文档+拖拽）=====
+var petAttachedFiles = []; // { name, data, type, textContent }
+
+/** 图片压缩 */
+function petCompressImage(dataUrl, maxSize) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      if (img.width <= maxSize && img.height <= maxSize) { resolve(dataUrl); return; }
+      var scale = maxSize / Math.max(img.width, img.height);
+      var w = Math.round(img.width * scale);
+      var h = Math.round(img.height * scale);
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = function() { resolve(dataUrl); };
+    img.src = dataUrl;
+  });
+}
+
+window.triggerPetAttach = function() {
+  var inp = document.getElementById('petAttachInput');
+  if (inp) { inp.value = ''; inp.click(); }
+};
+
+window.handlePetAttachSelect = function(event) {
+  var files = Array.from(event.target.files || []);
+  if (!files.length) return;
+  processPetFiles(files);
+  event.target.value = '';
+};
+
+function processPetFiles(files) {
+  files.forEach(function(file) {
+    var reader = new FileReader();
+    reader.onload = async function(e) {
+      var dataUrl = e.target.result;
+      var fileObj = { name: file.name, type: file.type, data: dataUrl, textContent: null };
+      if (file.type.startsWith('image/')) {
+        try { fileObj.data = await petCompressImage(dataUrl, 1024); } catch(ce) {}
+      } else {
+        try {
+          var result = await ipcRenderer.invoke('extract-file-text', { fileData: dataUrl, fileName: file.name, fileType: file.type });
+          if (result && result.success && result.content) fileObj.textContent = result.content;
+        } catch(te) { _dbg('extract error: ' + te.message); }
+      }
+      petAttachedFiles.push(fileObj);
+      renderPetAttachPreview();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderPetAttachPreview() {
+  var container = document.getElementById('petAttachPreview');
+  if (!container) return;
+  if (!petAttachedFiles.length) { container.innerHTML = ''; return; }
+  container.innerHTML = petAttachedFiles.map(function(f, i) {
+    var icon = f.type && f.type.startsWith('image/') ? '🖼' : '📎';
+    return '<span class="pet-attach-item">' + icon + ' ' + f.name +
+      '<span class="remove-attach" onclick="removePetAttach(' + i + ')">✕</span></span>';
+  }).join('');
+}
+
+window.removePetAttach = function(idx) {
+  petAttachedFiles.splice(idx, 1);
+  renderPetAttachPreview();
+};
+
+// ===== 拖拽上传 =====
+document.addEventListener('DOMContentLoaded', function() {
+  var chatPanel = document.getElementById('chatPanel');
+  if (chatPanel) {
+    chatPanel.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      chatPanel.style.outline = '2px dashed #4CAF50';
+    });
+    chatPanel.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      chatPanel.style.outline = '';
+    });
+    chatPanel.addEventListener('drop', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      chatPanel.style.outline = '';
+      var files = Array.from(e.dataTransfer.files || []);
+      if (files.length) processPetFiles(files);
+    });
+  }
+});
+
+// ===== 粘贴上传 =====
+document.addEventListener('paste', function(e) {
+  var items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].kind === 'file') {
+      var file = items[i].getAsFile();
+      if (file) processPetFiles([file]);
+    }
+  }
+});
+
+function sendChat() {
+  resetStream();
+  var text = chatInput.value.trim();
+  if ((!text && !petAttachedFiles.length) || isAiThinking) return;
+  if (!text) text = '';
+  _dbg('sendChat: ' + text.slice(0, 50) + ' files=' + petAttachedFiles.length + ' agent=' + currentAgentId);
+
+  chatInput.value = '';
+  chatInput.focus();
+
+  // 确保对话面板打开
+  if (activePanel !== 'chat') { togglePanel('chat'); }
+
+  // 即时待办检测：用户发送时立即创建（不等AI回复）
+  var todoKw = /(?:帮我|给我)?(?:创建|添加|记一下|设个?|加个?|安排)(?:一个)?(?:待办|代办|提醒|任务|事项|todo)/i;
+  var todoMatch = todoKw.exec(text);
+  _dbg('Todo check: text="' + text + '" match=' + (todoMatch ? todoMatch[0] : 'NO'));
+  if (todoMatch) {
+    _dbg('Todo keyword detected in: ' + text);
+    var eventText = text.replace(/帮我|给我|创建|添加|记一下|设个?|加个?|安排|一个|待办|代办|提醒|任务|事项/gi, '')
+      .replace(/今天|明天|后天|大后天|下[一二三四五六日天]|这周[一二三四五六日天]?/g, '')
+      .replace(/上午|下午|早上|中午|晚上|傍晚/g, '')
+      .replace(/\d{1,2}\s*[点:：]\s*(?:半|\d{1,2}\s*(?:分|钟)?)?/g, '')
+      .replace(/\d+\s*(?:分钟|小时|秒)(?:后|之后)/g, '')
+      .replace(/[,，、。！？\s：:]+/g, ' ').trim();
+    _dbg('Todo extracted text: "' + eventText + '"');
+    if (eventText) {
+      var parsed = parseNaturalTime(text);
+      var priority = 'green';
+      if (/紧急|马上|立刻|尽快|ASAP/i.test(text)) priority = 'red';
+      else if (/重要|必须|务必/i.test(text)) priority = 'blue';
+      else if (/今天|下午|上午/i.test(text) && parsed.date) priority = 'orange';
+      _dbg('Creating todo: ' + eventText + ' priority=' + priority + ' date=' + parsed.date + ' time=' + parsed.time);
+      _dbg('Invoking pet-create-todo: text="' + eventText + '" date=' + parsed.date + ' time=' + parsed.time);
+      ipcRenderer.invoke('pet-create-todo', {
+        text: eventText,
+        priority: priority,
+        due_date: parsed.date,
+        due_time: parsed.time
+      }).then(function(result) {
+        _dbg('Todo create result: success=' + (result && result.success) + ' data=' + JSON.stringify(result));
+        if (result && result.success) {
+          var timeStr = parsed.date ? ('📅 ' + parsed.date + (parsed.time ? ' ' + parsed.time : '')) : '';
+          addChatMsg('system', '✅ 已创建待办：' + eventText + (timeStr ? ' ' + timeStr : ''));
+          showBubble('✅ 待办已添加！');
+          setTimeout(hideBubble, 2000);
+          // 刷新待办面板
+          loadTodos();
+          _dbg('Todo created and panels notified');
+        } else {
+          addChatMsg('system', '❌ 待办创建失败：' + (result && result.error ? result.error : '未知'));
+          _dbg('Todo create FAILED: ' + JSON.stringify(result));
+        }
+      });
+    }
+  }
+
+  // 显示消息（含附件预览标签）
+  var displayText = text;
+  var attachLabels = petAttachedFiles.map(function(f) {
+    return (f.type && f.type.startsWith('image/') ? '🖼 ' : '📎 ') + f.name;
+  });
+  if (attachLabels.length) {
+    displayText += (displayText ? '\n' : '') + attachLabels.join('\n');
+  }
+  addChatMsg('user', displayText);
+
+  // 构建多模态 user content
+  var imageFiles = petAttachedFiles.filter(function(f) { return f.type && f.type.startsWith('image/'); });
+  var textFiles = petAttachedFiles.filter(function(f) { return !f.type || !f.type.startsWith('image/'); });
+
+  // 文本部分内容：用户输入 + 文件提取内容
+  var textParts = [];
+  if (text) textParts.push(text);
+  textFiles.forEach(function(f) {
+    if (f.textContent) {
+      textParts.push('\n\n===== 文件内容: ' + f.name + ' =====\n' + f.textContent + '\n===== 文件内容结束 =====');
+    } else {
+      textParts.push('\n[附件: ' + f.name + ']');
+    }
+  });
+  var fullText = textParts.join('');
+
+  var userContent;
+  if (imageFiles.length > 0) {
+    userContent = [];
+    if (fullText) userContent.push({ type: 'text', text: fullText });
+    imageFiles.forEach(function(f) {
+      userContent.push({ type: 'image_url', image_url: { url: f.data, detail: 'auto' } });
+    });
+  } else {
+    userContent = fullText || text;
+  }
+
+  // 保存到历史（多模态内容）
+  pushHistory('user', userContent);
+  // 清空附件
+  petAttachedFiles = [];
+  renderPetAttachPreview();
+
+  setMood('thinking');
+  isAiThinking = true;
+  showTyping();
+
+  var contextMsgs = getContextMessages(userContent);
+
+  // 构建 Agent 专属模型配置（灵动AI Agent 可能有独立模型）
+  var agentModelConfig = null;
+  if (currentBackendType === 'lingdong' && currentAgentId !== 'pet-default') {
+    var selectedAgent = agents.find(function(a) { return a.id === currentAgentId; });
+    if (selectedAgent) {
+      agentModelConfig = {
+        model: selectedAgent.model || '',
+        apiKey: selectedAgent.apiKey || '',
+        baseUrl: selectedAgent.baseUrl || '',
+        tools: selectedAgent.tools || [],
+        systemPrompt: selectedAgent.systemPrompt || (selectedAgent.description ? '你是' + (selectedAgent.name || '助手') + '。' + selectedAgent.description : '')
+      };
+      _dbg('Agent config: ' + selectedAgent.name + ' tools=' + (selectedAgent.tools || []).length + ' sysPrompt=' + (agentModelConfig.systemPrompt || '').slice(0, 50));
+    }
+  }
+
+  ipcRenderer.invoke('pet-chat', { text: text, skill: '', agentId: currentAgentId, contextMessages: contextMsgs, agentModelConfig: agentModelConfig }).then(function(result) {
+    isAiThinking = false;
+    removeTyping();
+    setMood('happy');
+
+    if (result && result.success) {
+      var reply = '';
+      if (result.data && result.data.choices && result.data.choices[0]) {
+        reply = result.data.choices[0].message.content || '';
+      } else if (result.output) { reply = result.output; }
+      else if (result.message) { reply = result.message; }
+      else { reply = JSON.stringify(result).slice(0, 300); }
+
+      if (result.toolCallLog && result.toolCallLog.length > 0) {
+        var tools = result.toolCallLog.map(function(t) { return t.tool; });
+        reply = (result.agentMode ? '🤖 ' : '🔧 ') + tools.join(', ') + '\n' + reply;
+      }
+      // Agent模式下不截断，非Agent模式截断
+      if (currentAgentId === "pet-default" && reply.length > 500) reply = reply.slice(0, 497) + "...";
+
+      // 如果流式已经显示了内容，不重复添加（用流式版本更新历史）
+      var alreadyStreamed = streamMsgEl && streamContent.length > 10;
+      if (!alreadyStreamed) {
+        addChatMsg('assistant', reply);
+      } else {
+        // 流式内容已显示，用完整回复替换（可能含工具调用前缀）
+        streamMsgEl.textContent = reply;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+      pushHistory('assistant', reply);
+      resetStream();
+
+      // 自动检测待办
+      autoDetectTodo(text, reply);
+
+      if (/错误|失败|error/i.test(reply)) { setMood('sad'); EXPR.sad(); }
+      else if (/完成|成功|done|已添加|已创建/i.test(reply)) { setMood('happy'); EXPR.superHappy(); }
+      else if (result.toolCallLog && result.toolCallLog.length > 0) { EXPR.smug(); }
+      else { EXPR.happy(); }
+    } else {
+      addChatMsg('assistant', '❌ ' + (result && result.error ? result.error : '出了点问题'));
+      setMood('sad');
+    }
+    setTimeout(function() { setMood('idle'); }, 5000);
+  }).catch(function(err) {
+    isAiThinking = false;
+    removeTyping();
+    addChatMsg('assistant', '❌ 调用失败：' + err.message);
+    setMood('sad');
+    setTimeout(function() { setMood('idle'); }, 5000);
+  });
+}
+
+// ===== 技能面板 =====
+var skills = [];
+var agents = [];
+var currentAgentId = 'pet-default';
+var currentBackendType = 'standalone'; // 独立版
+
+ipcRenderer.invoke('pet-get-skills').then(function(s) { skills = s || []; }).catch(function() {});
+ipcRenderer.invoke('pet-get-agents').then(function(a) {
+  agents = a || [];
+  _dbg('Loaded ' + agents.length + ' agents');
+}).catch(function() {});
+
+function renderSkillPanel() {
+  var html = '';
+  // Agent 选择
+  if (agents.length > 0) {
+    html += '<div class="panel-section-title">🤖 AGENT 助手</div>';
+    html += renderSkillCard('🐉', '宠物模式', '闲聊模式', 'agent:pet-default', currentAgentId === 'pet-default');
+    agents.forEach(function(a) {
+      var desc = a.description || (a.tools && a.tools.length ? a.tools.length + ' 个工具' : '');
+      html += renderSkillCard(a.icon || '🤖', a.name || a.id, desc, 'agent:' + a.id, currentAgentId === a.id);
+    });
+  }
+  // 快捷技能
+  html += '<div class="panel-section-title" style="margin-top:4px;">🛠️ 快捷技能</div>';
+  var quickSkills = [
+    ['🗣️','聊天对话','','chat'],
+    ['📝','写文档','','file_write'],
+    ['🔍','搜索文件','','search_knowledge_base'],
+    ['💻','执行命令','','execute_command'],
+    ['📸','截图分析','','take_screenshot'],
+    ['⏰','当前时间','','get_current_time'],
+    ['🌐','打开网址','','open_url'],
+  ];
+  quickSkills.forEach(function(s) { html += renderSkillCard(s[0], s[1], s[2], s[3], false); });
+  // 办公助手
+  html += '<div class="panel-section-title" style="margin-top:4px;">📋 办公助手</div>';
+  html += renderSkillCard('⏰', '创建提醒', '语音创建定时提醒', 'todo:reminder', false);
+  html += renderSkillCard('📊', '今日工作', '汇总今日工作', 'todo:daily', false);
+  // 自定义
+  if (skills.length > 0) {
+    html += '<div class="panel-section-title" style="margin-top:4px;">🔧 自定义</div>';
+    skills.forEach(function(s) {
+      html += renderSkillCard('🔧', s.name || s.id, s.description || '', 'skill:' + s.id, false);
+    });
+  }
+  skillPanelBody.innerHTML = html;
+}
+
+function renderSkillCard(icon, name, desc, action, isActive) {
+  var ac = isActive ? ' active' : '';
+  var ck = isActive ? ' ✓' : '';
+  var dh = desc ? '<div class="sc-desc">' + esc(desc) + '</div>' : '';
+  return '<div class="skill-card' + ac + '" onclick="selectSkill(\'' + action + '\',\'' + (name||'').replace(/'/g,"\\'") + '\')">' +
+    '<span class="sc-icon">' + icon + '</span>' +
+    '<div class="sc-info"><div class="sc-name">' + esc(name) + ck + '</div>' + dh + '</div></div>';
+}
+
+function selectSkill(action, label) {
+  closeAllPanels();
+  // Agent 切换
+  if (action && action.indexOf('agent:') === 0) {
+    var agentId = action.replace('agent:', '');
+    currentAgentId = agentId;
+    if (agentId === 'pet-default') {
+      hideAgentBadge();
+    } else {
+      var agent = agents.find(function(a) { return a.id === agentId; });
+      showAgentBadge(label, agent ? agent.icon : '🤖');
+      showBubble('🤖 已切换：' + label);
+    }
+    EXPR.happy();
+    setTimeout(function() { hideBubble(); }, 2000);
+    // 打开对话面板
+    setTimeout(function() { togglePanel('chat'); chatInput.placeholder = label + ' — 请输入...'; chatInput.focus(); }, 500);
+    return;
+  }
+  // 创建提醒
+  if (action === 'todo:reminder') {
+    setTimeout(function() { togglePanel('chat'); chatInput.placeholder = '⏰ 输入提醒（如：10分钟后开会）'; chatInput.dataset.skill = 'create_reminder'; chatInput.focus(); }, 300);
+    return;
+  }
+  // 今日工作
+  if (action === 'todo:daily') {
+    setTimeout(function() {
+      togglePanel('chat');
+      chatInput.value = '请帮我汇总今天做了哪些工作';
+      sendChat();
+    }, 300);
+    return;
+  }
+  // 普通技能
+  signEl.textContent = '🪧 ' + label;
+  signEl.classList.add('show');
+  setMood('talking');
+  EXPR.focus();
+  showBubble('请描述你的需求～');
+  setTimeout(function() {
+    togglePanel('chat');
+    chatInput.dataset.skill = action;
+    chatInput.placeholder = label + ' — 请输入...';
+    chatInput.focus();
+  }, 800);
+}
+
+// ===== Agent 名牌 =====
+function showAgentBadge(name, icon) {
+  badgeName.textContent = name;
+  document.querySelector('.badge-icon').textContent = icon || '🤖';
+  agentBadge.classList.add('show');
+  signEl.classList.remove('show');
+}
+function hideAgentBadge() {
+  agentBadge.classList.remove('show');
+  currentAgentId = 'pet-default';
+  showBubble('🐉 回到闲聊模式');
+  setTimeout(hideBubble, 2000);
+}
+badgeClose.addEventListener('click', function(e) { e.stopPropagation(); hideAgentBadge(); });
+
+// ===== 待办系统 =====
+var todos = [];
+function loadTodos() {
+  ipcRenderer.invoke('pet-todo-list').then(function(list) {
+    todos = list || [];
+    renderTodos();
+  }).catch(function() { todos = []; renderTodos(); });
+}
+function formatCountdown(ms) {
+  if (ms <= 0) return '已到时';
+  var h = Math.floor(ms / 3600000);
+  var m = Math.floor((ms % 3600000) / 60000);
+  var s = Math.floor((ms % 60000) / 1000);
+  if (h > 24) { var d = Math.floor(h / 24); return d + '天' + (h%24) + '时'; }
+  if (h > 0) return h + '时' + m + '分';
+  if (m > 0) return m + '分' + s + '秒';
+  return s + '秒';
+}
+function renderTodos() {
+  if (todos.length === 0) {
+    todoList.innerHTML = '<div class="todo-empty">还没有待办事项 ✨<br>在下方输入添加</div>';
+    return;
+  }
+  var now = Date.now();
+  var sorted = todos.map(function(t, i) { return Object.assign({}, t, { _idx: i }); })
+    .sort(function(a, b) {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      if (a.reminderTime && b.reminderTime) return a.reminderTime - b.reminderTime;
+      if (a.reminderTime) return -1;
+      if (b.reminderTime) return 1;
+      return (a.createdAt || 0) - (b.createdAt || 0);
+    });
+  todoList.innerHTML = sorted.map(function(t) {
+    var i = t._idx;
+    var isR = t.reminderTime && !t.done;
+    var rem = isR ? t.reminderTime - now : 0;
+    var urgent = isR && rem > 0 && rem < 600000;
+    var cdHtml = isR ? '<span class="countdown' + (urgent?' urgent':'') + '">' + (rem > 0 ? formatCountdown(rem) : '⏰ 到') + '</span>' : '';
+    return '<div class="todo-item' + (t.done?' done':'') + (isR?' reminder':'') + '">' +
+      '<span class="check" onclick="toggleTodo(' + i + ')"></span>' +
+      '<span class="text">' + esc(t.text) + '</span>' + cdHtml +
+      '<span class="del" onclick="deleteTodo(' + i + ')">✕</span></div>';
+  }).join('');
+}
+// 倒计时刷新
+// 倒计时刷新 + 提醒检查
+setInterval(function() {
+  if (activePanel === 'todo') renderTodos();
+  // 检查即将到期的提醒（5分钟内）
+  var now = Date.now();
+  todos.forEach(function(t, i) {
+    if (t.reminderTime && !t.done && !t._alerted) {
+      var remaining = t.reminderTime - now;
+      if (remaining > 0 && remaining < 300000) { // 5分钟内
+        // 宠物变红 + 弹出提醒
+        setMood('angry'); // 用红色表示紧急
+        showBubble('⏰ 提醒：' + t.text + '\n还有' + formatCountdown(remaining) + '！');
+        t._alerted = true;
+        setTimeout(function() { hideBubble(); setMood('idle'); }, 8000);
+      }
+    }
+  });
+}, 5000);
+
+function addTodo() {
+  var text = todoInput.value.trim();
+  if (!text) return;
+  // 获取提醒时间
+  var reminderTimeInput = document.getElementById('todoReminderTime');
+  var reminderTime = null;
+  if (reminderTimeInput && reminderTimeInput.value) {
+    reminderTime = new Date(reminderTimeInput.value).getTime();
+  }
+  // 如果没有手动设置时间，尝试从文本解析
+  if (!reminderTime) {
+    reminderTime = parseReminderTime(text);
+  }
+  ipcRenderer.invoke('pet-todo-add', { text: text, done: false, createdAt: Date.now(), reminderTime: reminderTime }).then(function() {
+    todoInput.value = '';
+    if (reminderTimeInput) reminderTimeInput.value = '';
+    loadTodos();
+    var timeStr = reminderTime ? '（⏰ ' + new Date(reminderTime).toLocaleString('zh-CN', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) + '）' : '';
+    showBubble('✅ 已添加' + timeStr);
+    setTimeout(hideBubble, 2500);
+  });
+}
+function toggleTodo(idx) { ipcRenderer.invoke('pet-todo-toggle', idx).then(function() { loadTodos(); }); }
+function deleteTodo(idx) { ipcRenderer.invoke('pet-todo-delete', idx).then(function() { loadTodos(); }); }
+
+function parseReminderTime(text) {
+  var now = new Date();
+  var relMatch = text.match(/(\d+)\s*(分钟|小时|秒)(?:后|之后)/);
+  if (relMatch) {
+    var num = parseInt(relMatch[1]);
+    var unit = relMatch[2];
+    var ms = unit === '小时' ? num * 3600000 : unit === '分钟' ? num * 60000 : num * 1000;
+    return now.getTime() + ms;
+  }
+  var timeMatch = text.match(/(上午|下午|早上)?(\d{1,2})[点:：](\d{0,2})?/);
+  if (timeMatch) {
+    var period = timeMatch[1] || '';
+    var hours = parseInt(timeMatch[2]);
+    var minutes = parseInt(timeMatch[3] || '0');
+    if (period === '下午' && hours < 12) hours += 12;
+    var target = new Date();
+    target.setHours(hours, minutes, 0, 0);
+    if (target.getTime() <= now.getTime()) target.setDate(target.getDate() + 1);
+    return target.getTime();
+  }
+  return null;
+}
+
+function autoDetectTodo(userText, aiReply) {
+  // 检测待办意图
+  var todoKw = /(?:帮我|给我)?(?:创建|添加|记一下|设个?|加个?|安排)(?:一个)?(?:待办|代办|提醒|任务|事项|todo)?/i;
+  var timeEventKw = /(?:开会|会议|面试|研讨|培训|汇报|报告|电话|通话|约会|出门|出差|提交|交付|上线|发布|演示|评审|复盘|团建|聚餐|吃饭|约会|看病|预约)/;
+  var timeExprKw = /(?:今天|明天|后天|大后天|下[一二三四五六日天]|这周[一二三四五六日天]?)?(?:上午|下午|早上|中午|晚上|傍晚)?\s*\d{1,2}\s*[点:：]\s*(?:半|\d{1,2}\s*(?:分|钟)?)?|\d+\s*(?:分钟|小时|秒)(?:后|之后)/;
+
+  // 触发条件：(1) 明确说"创建待办" 或 (2) 包含时间+事件关键词
+  var hasTodoIntent = todoKw.test(userText);
+  var hasTimeEvent = timeExprKw.test(userText) && timeEventKw.test(userText);
+
+  if (!hasTodoIntent && !hasTimeEvent) return;
+
+  // 解析时间
+  var parsed = parseNaturalTime(userText);
+  if (!parsed.date && !hasTodoIntent) return; // 没有时间信息且不明确
+
+  // 提取事件内容
+  var eventText = extractEventText(userText);
+  if (!eventText) return;
+
+  // 根据紧急程度推断优先级
+  var priority = 'green';
+  if (/紧急|马上|立刻|尽快|ASAP/i.test(userText)) priority = 'red';
+  else if (/重要|必须|务必/i.test(userText)) priority = 'blue';
+  else if (/今天|下午|上午/i.test(userText) && parsed.date) priority = 'orange';
+
+  ipcRenderer.invoke('pet-create-todo', {
+    text: eventText,
+    priority: priority,
+    due_date: parsed.date,
+    due_time: parsed.time
+  }).then(function(result) {
+    if (result && result.success) {
+      var timeStr = parsed.date ? ('📅 ' + parsed.date + (parsed.time ? ' ' + parsed.time : '')) : '';
+      addChatMsg('system', '✅ 已创建待办：' + eventText + (timeStr ? ' ' + timeStr : ''));
+      showBubble('✅ 待办已添加！');
+      setTimeout(hideBubble, 2000);
+    }
+  });
+}
+
+// 解析自然语言时间
+function parseNaturalTime(text) {
+  var now = new Date();
+  var result = { date: null, time: null };
+
+  // 相对时间: 30分钟后, 2小时后
+  var relMatch = text.match(/(\d+)\s*(分钟|小时|秒)(?:后|之后)/);
+  if (relMatch) {
+    var num = parseInt(relMatch[1]);
+    var unit = relMatch[2];
+    var target = new Date(now);
+    if (unit === '小时') target.setHours(target.getHours() + num);
+    else if (unit === '分钟') target.setMinutes(target.getMinutes() + num);
+    else target.setSeconds(target.getSeconds() + num);
+    result.date = target.toISOString().slice(0, 10);
+    result.time = String(target.getHours()).padStart(2, '0') + ':' + String(target.getMinutes()).padStart(2, '0');
+    return result;
+  }
+
+  // 日期前缀
+  var dayOffset = 0;
+  if (/今天/.test(text)) dayOffset = 0;
+  else if (/明天/.test(text)) dayOffset = 1;
+  else if (/后天/.test(text)) dayOffset = 2;
+  else if (/大后天/.test(text)) dayOffset = 3;
+  else {
+    var weekDayMatch = text.match(/下([一二三四五六日天])/);
+    if (weekDayMatch) {
+      var dayMap = {'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'日':0,'天':0};
+      var targetDow = dayMap[weekDayMatch[1]];
+      var currentDow = now.getDay();
+      dayOffset = (7 - currentDow + targetDow) % 7;
+      if (dayOffset === 0) dayOffset = 7;
+    }
+  }
+
+  var targetDate = new Date(now);
+  targetDate.setDate(targetDate.getDate() + dayOffset);
+  result.date = targetDate.toISOString().slice(0, 10);
+
+  // 统一时间正则：支持 "3点", "3点半", "3点30", "3:30", "下午3点半"
+  var timeMatch = text.match(/(上午|下午|早上|中午|晚上|傍晚)?\s*(\d{1,2})\s*[点:：]\s*(半|(\d{1,2})\s*(?:分|钟)?)?/);
+  if (timeMatch) {
+    var period = timeMatch[1] || '';
+    var hours = parseInt(timeMatch[2]);
+    var isHalf = timeMatch[3] === '半';
+    var minutes = isHalf ? 30 : parseInt(timeMatch[4] || '0');
+
+    if ((period === '下午' || period === '晚上' || period === '傍晚') && hours < 12) hours += 12;
+    if (period === '中午' && hours < 11) hours += 12;
+
+    result.time = String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+  }
+
+  return result;
+}
+
+// 提取事件文本
+function extractEventText(text) {
+  var cleaned = text
+    .replace(/帮我|给我|创建|添加|记一下|设个?|加个?|安排|一个|待办|代办|提醒|任务|事项/gi, '')
+    .replace(/今天|明天|后天|大后天|下[一二三四五六日天]|这周[一二三四五六日天]?/g, '')
+    .replace(/上午|下午|早上|中午|晚上|傍晚/g, '')
+    .replace(/\d{1,2}\s*[点:：]\s*(?:半|\d{1,2}\s*(?:分|钟)?)?/g, '')
+    .replace(/\d+\s*(?:分钟|小时|秒)(?:后|之后)/g, '')
+    .replace(/[,，、。！？\s]+/g, ' ')
+    .trim();
+  return cleaned || null;
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ===== 提醒 =====
+var _reminderAutoTimer = null;
+var _activeReminderTodoIds = []; // 跟踪所有活跃提醒的待办ID
+
+function showReminder(title, body, todoId) {
+  _dbg('[Reminder] 🔔 showReminder: ' + title + ' (id=' + todoId + ')');
+
+  // 如果是新的待办提醒，加入活跃列表
+  if (todoId && _activeReminderTodoIds.indexOf(todoId) === -1) {
+    _activeReminderTodoIds.push(todoId);
+  }
+
+  remTitle.textContent = '⏰ ' + title;
+  remBody.textContent = body || '';
+  reminderBubble.classList.add('show');
+  setMood('surprised');
+  try { ipcRenderer.invoke('pet-tts-speak', '提醒你：' + title + '。' + body); } catch(e) {}
+
+  // 自动消失：15秒后（但只有在所有待办都处理完时）
+  if (_reminderAutoTimer) clearTimeout(_reminderAutoTimer);
+  _reminderAutoTimer = setTimeout(function() {
+    _dbg('[Reminder] ⏱️ 15秒自动消失检查，活跃待办: ' + _activeReminderTodoIds.length);
+    _checkAndDismiss();
+  }, 15000);
+}
+
+function dismissReminder() {
+  reminderBubble.classList.remove('show');
+  _activeReminderTodoIds = [];
+  if (_reminderAutoTimer) { clearTimeout(_reminderAutoTimer); _reminderAutoTimer = null; }
+  setMood('idle');
+}
+
+// 检查所有活跃待办是否都已处理完
+function _checkAndDismiss() {
+  if (_activeReminderTodoIds.length === 0) {
+    _dbg('[Reminder] ✅ 所有提醒待办已处理，关闭气泡');
+    dismissReminder();
+    return;
+  }
+
+  // 用 Promise.all 等所有检查完成再判断
+  var ids = _activeReminderTodoIds.slice();
+  var promises = ids.map(function(id) {
+    return ipcRenderer.invoke('pet-todo-get', id).then(function(todo) {
+      if (!todo || todo.done || todo.archived) {
+        return { id: id, active: false };
+      }
+      return { id: id, active: true };
+    }).catch(function() {
+      return { id: id, active: false }; // 已删除
+    });
+  });
+
+  Promise.all(promises).then(function(results) {
+    // 只保留仍活跃的待办
+    _activeReminderTodoIds = results.filter(function(r) { return r.active; }).map(function(r) { return r.id; });
+    _dbg('[Reminder] 🔍 检查结果: 活跃 ' + _activeReminderTodoIds.length + '/' + ids.length);
+    if (_activeReminderTodoIds.length === 0) {
+      _dbg('[Reminder] ✅ 所有提醒待办已处理，关闭气泡');
+      dismissReminder();
+    }
+  });
+}
+
+ipcRenderer.on('pet-reminder-fire', function(_, data) {
+  _dbg('[Reminder] 📩 Received pet-reminder-fire: ' + JSON.stringify(data));
+  showReminder(data.title, data.body, data.todoId);
+});
+
+// 监听待办变化（归档/完成/删除时检查是否所有提醒待办都处理完）
+ipcRenderer.on('todo-changed', function() {
+  if (_activeReminderTodoIds.length > 0) {
+    _dbg('[Reminder] 🔄 待办变化，检查活跃提醒: ' + JSON.stringify(_activeReminderTodoIds));
+    _checkAndDismiss();
+  }
+});
+
+// 前端加载完成，通知后端可以发提醒了
+ipcRenderer.send('pet-window-ready');
+_dbg('Sent pet-window-ready signal');
+
+// ===== 语音系统（Windows SAPI） =====
+var isVoiceActive = false;
+var voiceProcess = null;
+var wakeWordEnabled = true;
+var wakeCheckInterval = null;
+
+// NLS 语音识别状态
+var _nlsAudioCtx = null;
+var _nlsStream = null;
+var _nlsScriptNode = null;
+var _nlsSource = null;
+var _nlsFullText = '';        // 累积识别结果
+var _nlsLastSentenceText = ''; // 最后一句话（用于去重）
+var _nlsHeartbeatTimer = null; // 心跳定时器（防止 IDLE TIMEOUT）
+
+// 语音按钮 → 点击开始/停止录音（阿里云 NLS 实时语音识别）
+function toggleVoice() {
+  if (isVoiceActive) {
+    stopVoice();
+    return;
+  }
+  startVoice();
+}
+
+async function startVoice() {
+  if (isVoiceActive) return;
+  
+  isVoiceActive = true;
+  _nlsFullText = '';
+  _nlsLastSentenceText = '';
+  voiceIndicator.classList.add('show');
+  setMood('thinking');
+  EXPR.curious();
+  showBubble('🎤 聆听中... 请说话');
+  
+  try {
+    // 1. 启动 NLS 后端连接
+    var startResult = await ipcRenderer.invoke('pet-voice-start');
+    if (!startResult || !startResult.success) {
+      throw new Error(startResult?.error || 'NLS 启动失败');
+    }
+    _dbg('NLS started');
+    
+    // 2. 获取麦克风权限并设置音频管道
+    _nlsStream = await navigator.mediaDevices.getUserMedia({ 
+      audio: { 
+        echoCancellation: true, 
+        noiseSuppression: true, 
+        autoGainControl: true
+      } 
+    });
+    _dbg('Microphone granted');
+    
+    // 使用系统默认采样率创建 AudioContext（兼容性更好）
+    _nlsAudioCtx = new AudioContext();
+    if (_nlsAudioCtx.state === 'suspended') {
+      await _nlsAudioCtx.resume();
+    }
+    _dbg('AudioContext state: ' + _nlsAudioCtx.state + ', rate: ' + _nlsAudioCtx.sampleRate);
+    
+    _nlsSource = _nlsAudioCtx.createMediaStreamSource(_nlsStream);
+    
+    // ScriptProcessorNode: 捕获 PCM 音频
+    var bufferSize = 4096;
+    _nlsScriptNode = _nlsAudioCtx.createScriptProcessor(bufferSize, 1, 1);
+    
+    _nlsScriptNode.onaudioprocess = function(e) {
+      if (!isVoiceActive) return;
+      
+      var input = e.inputBuffer.getChannelData(0); // Float32Array
+      
+      // 降采样到 16kHz mono 16-bit PCM
+      var deviceRate = _nlsAudioCtx.sampleRate;
+      var ratio = deviceRate / 16000;
+      var outLen = Math.floor(input.length / ratio);
+      if (outLen === 0) return;
+      
+      var pcm16 = new Int16Array(outLen);
+      for (var i = 0; i < outLen; i++) {
+        var idx = Math.floor(i * ratio);
+        var nextIdx = Math.min(idx + 1, input.length - 1);
+        var frac = i * ratio - idx;
+        // 线性插值
+        var sample = input[idx] * (1 - frac) + input[nextIdx] * frac;
+        // clamp to [-1, 1] then scale to 16-bit
+        sample = Math.max(-1, Math.min(1, sample));
+        pcm16[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+      }
+      
+      // 发送到主进程（ArrayBuffer 通过 IPC 自动结构化克隆）
+      ipcRenderer.send('pet-voice-chunk', pcm16.buffer.slice(0));
+    };
+    
+    _nlsSource.connect(_nlsScriptNode);
+    _nlsScriptNode.connect(_nlsAudioCtx.destination);
+    
+    _dbg('Audio pipeline: ' + _nlsAudioCtx.sampleRate + 'Hz → 16kHz PCM');
+    
+    // 3. 心跳：确保 AudioContext 保持 running（防止系统挂起）
+    _nlsHeartbeatTimer = setInterval(function() {
+      if (isVoiceActive && _nlsAudioCtx && _nlsAudioCtx.state === 'suspended') {
+        _nlsAudioCtx.resume();
+      }
+    }, 500);
+    
+  } catch (err) {
+    _dbg('Voice start error: ' + err.message);
+    isVoiceActive = false;
+    voiceIndicator.classList.remove('show');
+    hideBubble();
+    showBubble('🎤 语音启动失败: ' + err.message);
+    setTimeout(hideBubble, 3000);
+    setMood('idle');
+    _cleanupNLSAudio();
+  }
+}
+
+function stopVoice() {
+  if (!isVoiceActive) return;
+  isVoiceActive = false;
+  
+  // 停止音频采集
+  _cleanupNLSAudio();
+  
+  // 停止 NLS 后端
+  ipcRenderer.invoke('pet-voice-stop');
+  
+  voiceIndicator.classList.remove('show');
+  
+  // 使用累积的识别结果
+  var finalText = _nlsFullText.trim();
+  _dbg('Voice final: ' + finalText);
+  
+  if (finalText) {
+    hideBubble();
+    if (activePanel !== 'chat') togglePanel('chat');
+    chatInput.value = finalText;
+    sendChat();
+    setMood('happy');
+  } else {
+    showBubble('🎤 没有听到内容，请重试');
+    setTimeout(hideBubble, 2500);
+    setMood('idle');
+  }
+}
+
+// 清理音频管道
+function _cleanupNLSAudio() {
+  try {
+    if (_nlsHeartbeatTimer) { clearInterval(_nlsHeartbeatTimer); _nlsHeartbeatTimer = null; }
+    if (_nlsScriptNode) { _nlsScriptNode.disconnect(); _nlsScriptNode = null; }
+    if (_nlsSource) { _nlsSource.disconnect(); _nlsSource = null; }
+    if (_nlsStream) { _nlsStream.getTracks().forEach(function(t) { t.stop(); }); _nlsStream = null; }
+    if (_nlsAudioCtx) { _nlsAudioCtx.close().catch(function(){}); _nlsAudioCtx = null; }
+  } catch(e) { _dbg('Cleanup audio error: ' + e.message); }
+}
+
+// 监听 NLS 实时中间结果
+ipcRenderer.on('pet-voice-partial', function(e, text) {
+  if (text) {
+    // 普通语音模式：显示在气泡
+    if (!meetingState || meetingState === 'idle') {
+      showBubble('🎤 ' + text);
+    }
+    // 会议模式：显示在会议转写区域（实时更新）
+    if (meetingState === 'recording') {
+      showBubble('🎤 ' + text);
+      // 更新会议转写区域的实时文本
+      var scroll = document.getElementById('transcriptScroll');
+      if (scroll) {
+        var liveEl = scroll.querySelector('.transcript-live');
+        if (!liveEl) {
+          liveEl = document.createElement('div');
+          liveEl.className = 'transcript-line transcript-live';
+          liveEl.innerHTML = '<span class="tl-time" style="color:var(--accent);">●</span><span class="tl-text" style="opacity:0.7;"></span>';
+          scroll.appendChild(liveEl);
+        }
+        liveEl.querySelector('.tl-text').textContent = text;
+        scroll.scrollTop = scroll.scrollHeight;
+      }
+    }
+  }
+});
+
+// 监听 NLS 句子完成
+ipcRenderer.on('pet-voice-sentence', function(e, text) {
+  if (text && text !== _nlsLastSentenceText) {
+    _nlsLastSentenceText = text;
+    _nlsFullText += text;
+    _dbg('Sentence: ' + text);
+    // 普通模式：显示在气泡
+    if (!meetingState || meetingState === 'idle') {
+      showBubble('🎤 ' + _nlsFullText);
+    }
+    // 会议模式：移除实时元素（会被 pet-meeting-transcript 替换为正式条目）
+    if (meetingState === 'recording') {
+      var scroll = document.getElementById('transcriptScroll');
+      if (scroll) {
+        var liveEl = scroll.querySelector('.transcript-live');
+        if (liveEl) liveEl.remove();
+      }
+    }
+  }
+});
+
+// 监听 NLS 识别完成
+ipcRenderer.on('pet-voice-done', function() {
+  _dbg('NLS transcription completed');
+});
+
+// 监听 NLS 错误
+ipcRenderer.on('pet-voice-error', function(e, errMsg) {
+  _dbg('NLS error: ' + errMsg);
+  showBubble('🎤 识别错误: ' + errMsg);
+  setTimeout(function() {
+    if (isVoiceActive) stopVoice();
+  }, 2000);
+});
+
+// 语音唤醒 - 后台定期检查（简化版：每30秒检查一次麦克风）
+function startWakeWordListener() {
+  _dbg('Wake word: Windows SAPI does not support always-on listening, using push-to-talk');
+}
+
+function stopWakeWordListener() {}
+
+// ===== 设置 =====
+function openSettings() { ipcRenderer.invoke('pet-open-settings'); }
+
+// 待办面板 toggle（点击打开，再点击关闭）
+var _todoPanelOpen = false;
+function openTodoPanel() {
+  ipcRenderer.invoke('pet-open-todo-panel').then(function(result) {
+    if (result && result.success) {
+      if (result.action === 'closed') {
+        _todoPanelOpen = false;
+        _dbg('Todo panel toggled off');
+      } else {
+        _todoPanelOpen = true;
+        _dbg('Todo panel opened');
+      }
+    } else {
+      showBubble('❌ ' + (result && result.error ? result.error : '打开失败'));
+      setTimeout(hideBubble, 2000);
+    }
+  }).catch(function(err) {
+    showBubble('❌ ' + err.message);
+    setTimeout(hideBubble, 2000);
+  });
+}
+ipcRenderer.on('pet-todo-panel-closed', function() {
+  _todoPanelOpen = false;
+  _dbg('Todo panel closed externally');
+});
+ipcRenderer.on('pet-config-changed', function() {
+  ipcRenderer.invoke('pet-get-agents').then(function(a) { agents = a || []; });
+});
+
+// ===== 空闲行为 =====
+var idleThoughts = ['💭 天气怎么样...','🎵 想听首歌~','😴 有点无聊...','🤔 有什么能帮你的？','📚 看看待办？','☕ 记得喝水~','🌈 右键试试~','⏰ 设个提醒？','🧠 新技能get！','🐉 在线等指令~'];
+var lastIdleTime = Date.now();
+function showIdleThought() {
+  idleThought.textContent = idleThoughts[Math.floor(Math.random() * idleThoughts.length)];
+  idleThought.classList.add('show');
+  var exprs = ['daydream','curious','content'];
+  EXPR[exprs[Math.floor(Math.random()*exprs.length)]]();
+  setTimeout(function() { idleThought.classList.remove('show'); setMood('idle'); }, 5000);
+}
+setInterval(function() {
+  if (Date.now() - lastIdleTime > 45000 && !isAiThinking && !isVoiceActive && !activePanel) {
+    if (Math.random() < 0.5) showIdleThought();
+    lastIdleTime = Date.now();
+  }
+}, 15000);
+document.addEventListener('mousemove', function() { lastIdleTime = Date.now(); idleThought.classList.remove('show'); });
+document.addEventListener('click', function() { lastIdleTime = Date.now(); });
+
+// ===== IPC 事件 =====
+ipcRenderer.on('pet-set-mood', function(_, mood) { setMood(mood); });
+ipcRenderer.on('pet-show-bubble', function(_, text) { showBubble(text); setTimeout(hideBubble, 5000); });
+ipcRenderer.on('pet-refresh-skills', function(_, s) { skills = s || []; });
+// 待办到期提醒
+ipcRenderer.on('pet-todo-reminder', function(_, data) {
+  var priorityEmoji = { red: '🔴', orange: '🟠', blue: '🔵', green: '🟢' };
+  var emoji = priorityEmoji[data.priority] || '🟢';
+  showBubble('⏰ ' + emoji + ' ' + data.status + '：' + data.text + '\n📅 ' + data.time);
+  setTimeout(hideBubble, 8000);
+  _dbg('Todo reminder: ' + data.status + ' - ' + data.text);
+});
+// 待办数据更新通知（刷新面板）
+ipcRenderer.on('pet-todos-updated', function() {
+  loadTodos();
+  _dbg('Todos updated, refreshed panel');
+});
+// pet-backend-changed 事件已经在上面定义过了，避免重复
+
+// ===== 初始化 =====
+setMood('idle');
+// 启动唤醒词监听（延迟3秒，等页面完全加载）
+setTimeout(function() {
+  startWakeWordListener();
+  _dbg('Wake word listener initialized');
+}, 3000);
+setTimeout(function() {
+  showBubble('灵动AI就绪！✨ 右键或点工具栏试试');
+  EXPR.happy();
+  setTimeout(function() { hideBubble(); }, 3500);
+}, 1000);
+setTimeout(function() {
+  ipcRenderer.invoke('pet-get-agents').then(function(a) {
+    agents = a || [];
+    if (agents.length > 0) _dbg('Agents refreshed: ' + agents.map(function(x){return x.name;}).join(', '));
+  }).catch(function() {});
+}, 3000);
+// 获取当前后端类型
+ipcRenderer.invoke('pet-get-backend').then(function(type) {
+  currentBackendType = type || 'standalone';
+  var btnSkill = document.getElementById('btnSkill');
+  if (btnSkill) {
+    btnSkill.style.display = (currentBackendType === 'lingdong') ? '' : 'none';
+  }
+  _dbg('Initial backend: ' + currentBackendType);
+}).catch(function() {});
+
+// 监听后端变更
+ipcRenderer.on('pet-backend-changed', function(_, backendType) {
+  currentBackendType = backendType;
+  _dbg('Backend changed to: ' + backendType);
+  // 非灵动AI时隐藏技能按钮
+  var btnSkill = document.getElementById('btnSkill');
+  if (btnSkill) {
+    btnSkill.style.display = (backendType === 'lingdong') ? '' : 'none';
+  }
+  // 隐藏 Agent badge
+  if (backendType !== 'lingdong') {
+    hideAgentBadge();
+    currentAgentId = 'pet-default';
+  }
+  // 后端切换时刷新 Agent 列表
+  ipcRenderer.invoke('pet-get-agents').then(function(a) {
+    agents = a || [];
+    _dbg('Agents refreshed: ' + agents.length);
+    if (activePanel === 'skill') renderSkillPanel();
+  }).catch(function() {});
+  // 如果当前打开了技能面板且不是灵动AI，关闭它
+  if (activePanel === 'skill' && backendType !== 'lingdong') {
+    closePanel('skill');
+  }
+});
+
+
+// ===== 会议纪要系统（透传 voice 站点） =====
+var meetingState = 'idle'; // idle | recording | paused | stopped
+var meetingTimer = null;
+var meetingSeconds = 0;
+var meetingTranscript = []; // 实时转写内容
+
+// 检测"开始开会"关键词
+function checkMeetingKeyword(text) {
+  var keywords = ['开始开会', '开始会议', '开会了', '会议开始', '录制会议', '开始录制'];
+  for (var i = 0; i < keywords.length; i++) {
+    if (text.indexOf(keywords[i]) >= 0) return true;
+  }
+  return false;
+}
+
+// Hook sendChat 检测关键词
+var _origSendChat = sendChat;
+sendChat = function() {
+  var text = chatInput.value.trim();
+  var isMeeting = checkMeetingKeyword(text);
+  _origSendChat();
+  if (isMeeting) {
+    setTimeout(function() {
+      if (currentBackendType === 'lingdong') {
+        addMeetingStartButton();
+      } else {
+        addChatMsg('system', '⚠️ 会议纪要功能需要接入灵动AI智能体，请在设置中切换后端为灵动AI。');
+      }
+    }, 800);
+  }
+};
+
+function addMeetingStartButton() {
+  var msg = document.createElement('div');
+  msg.className = 'chat-msg assistant';
+  msg.innerHTML = '<div style="margin-bottom:6px">检测到会议需求，点击下方按钮开始录制：</div>' +
+    '<div class="meeting-start-btn" onclick="startMeeting()" id="meetingStartBtn">🎙️ 开始会议录制</div>';
+  chatMessages.appendChild(msg);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function startMeeting() {
+  // 禁用开始按钮
+  var btn = document.getElementById('meetingStartBtn');
+  if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; btn.textContent = '⏳ 启动中...'; }
+
+  meetingState = 'recording';
+  meetingSeconds = 0;
+  meetingTranscript = [];
+
+  // 通知后端启动 NLS + 前端启动麦克风
+  ipcRenderer.invoke('pet-meeting-start').then(async function(result) {
+    if (result && result.success) {
+      // 启动麦克风音频管道
+      var audioOk = await _startMeetingAudio();
+      if (!audioOk) {
+        // 麦克风失败，停止 NLS 并重置
+        ipcRenderer.invoke('pet-meeting-stop');
+        meetingState = 'idle';
+        if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = ''; btn.textContent = '🎙️ 开始会议录制'; }
+        showBubble('❌ 麦克风权限被拒绝，请在系统设置中允许麦克风访问');
+        setTimeout(hideBubble, 3000);
+        return;
+      }
+
+      // 显示录制栏
+      document.getElementById('meetingBar').classList.add('show');
+      document.getElementById('meetingTranscript').style.display = 'block';
+      document.getElementById('meetingStatus').textContent = '录制中';
+      document.getElementById('meetingPauseBtn').textContent = '暂停';
+      document.getElementById('meetingPauseBtn').style.display = '';
+      document.getElementById('meetingStopBtn').style.display = '';
+      document.getElementById('meetingStopBtn').textContent = '结束';
+      document.getElementById('meetingGenBtn').style.display = 'none';
+
+      // 计时器
+      meetingTimer = setInterval(function() {
+        if (meetingState === 'recording') {
+          meetingSeconds++;
+          var m = Math.floor(meetingSeconds / 60).toString().padStart(2, '0');
+          var s = (meetingSeconds % 60).toString().padStart(2, '0');
+          document.getElementById('meetingTime').textContent = m + ':' + s;
+        }
+      }, 1000);
+
+      if (btn) btn.textContent = '✅ 录制中';
+      showBubble('🎙️ 会议录制已开始');
+      setTimeout(hideBubble, 2000);
+      _dbg('Meeting recording started');
+    } else {
+      showBubble('❌ 启动失败：' + (result && result.error ? result.error : 'NLS 连接失败'));
+      setTimeout(hideBubble, 3000);
+      meetingState = 'idle';
+      if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = ''; btn.textContent = '🎙️ 开始会议录制'; }
+    }
+  }).catch(function(err) {
+    showBubble('❌ 启动失败：' + err.message);
+    setTimeout(hideBubble, 3000);
+    meetingState = 'idle';
+    if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = ''; btn.textContent = '🎙️ 开始会议录制'; }
+  });
+}
+
+function toggleMeetingPause() {
+  if (meetingState === 'recording') {
+    meetingState = 'paused';
+    ipcRenderer.invoke('pet-meeting-pause');
+    document.getElementById('meetingStatus').textContent = '已暂停';
+    document.getElementById('meetingPauseBtn').textContent = '继续';
+    document.querySelector('.meeting-bar .rec-dot').style.animation = 'none';
+  } else if (meetingState === 'paused') {
+    meetingState = 'recording';
+    ipcRenderer.invoke('pet-meeting-resume');
+    document.getElementById('meetingStatus').textContent = '录制中';
+    document.getElementById('meetingPauseBtn').textContent = '暂停';
+    document.querySelector('.meeting-bar .rec-dot').style.animation = '';
+  }
+}
+
+function stopMeeting() {
+  meetingState = 'stopped';
+  clearInterval(meetingTimer);
+  _stopMeetingAudio();
+
+  ipcRenderer.invoke('pet-meeting-stop').then(function() {
+    document.getElementById('meetingStatus').textContent = '录制完成';
+    document.querySelector('.meeting-bar .rec-dot').style.animation = 'none';
+    document.querySelector('.meeting-bar .rec-dot').style.background = '#4CAF50';
+    document.getElementById('meetingPauseBtn').style.display = 'none';
+    document.getElementById('meetingStopBtn').style.display = 'none';
+    document.getElementById('meetingGenBtn').style.display = '';
+
+    var count = meetingTranscript.length;
+    showBubble('✅ 录制完成（' + count + ' 条转写），点击"生成会议纪要"');
+    setTimeout(hideBubble, 3000);
+    _dbg('Meeting stopped, transcript count: ' + count);
+  });
+}
+
+function generateMeetingNotes() {
+  document.getElementById('meetingStatus').textContent = '生成中...';
+  document.getElementById('meetingGenBtn').disabled = true;
+  document.getElementById('meetingGenBtn').textContent = '生成中...';
+
+  var transcriptText = meetingTranscript.map(function(t) {
+    return typeof t === 'string' ? t : (t.text || '');
+  }).join('\n');
+
+  if (!transcriptText.trim()) {
+    document.getElementById('meetingStatus').textContent = '无转写内容';
+    document.getElementById('meetingGenBtn').disabled = false;
+    document.getElementById('meetingGenBtn').textContent = '生成会议纪要';
+    showBubble('❌ 没有录制到任何内容');
+    setTimeout(hideBubble, 2000);
+    return;
+  }
+
+  ipcRenderer.invoke('pet-meeting-generate', {
+    transcript: meetingTranscript,
+    duration: meetingSeconds
+  }).then(function(result) {
+    // 重置按钮状态
+    document.getElementById('meetingGenBtn').disabled = false;
+    document.getElementById('meetingGenBtn').textContent = '生成会议纪要';
+    // 隐藏录制UI
+    document.getElementById('meetingBar').classList.remove('show');
+    document.getElementById('meetingTranscript').style.display = 'none';
+    meetingState = 'idle';
+
+    if (result && result.success) {
+      var noteText = result.text || '会议纪要已生成';
+      addChatMsg('system', '📋 会议纪要');
+      addChatMsg('assistant', noteText);
+    } else {
+      addChatMsg('assistant', '❌ 生成失败：' + (result && result.error ? result.error : '未知错误'));
+    }
+  }).catch(function(err) {
+    document.getElementById('meetingGenBtn').disabled = false;
+    document.getElementById('meetingGenBtn').textContent = '生成会议纪要';
+    document.getElementById('meetingBar').classList.remove('show');
+    document.getElementById('meetingTranscript').style.display = 'none';
+    meetingState = 'idle';
+    addChatMsg('assistant', '❌ 生成失败：' + err.message);
+  });
+}
+
+// 会议音频管道（复用 NLS 音频发送逻辑）
+var _meetingAudioCtx = null;
+var _meetingStream = null;
+var _meetingScriptNode = null;
+var _meetingSource = null;
+
+async function _startMeetingAudio() {
+  try {
+    _meetingStream = await navigator.mediaDevices.getUserMedia({ 
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
+    });
+    _meetingAudioCtx = new AudioContext();
+    if (_meetingAudioCtx.state === 'suspended') await _meetingAudioCtx.resume();
+    _meetingSource = _meetingAudioCtx.createMediaStreamSource(_meetingStream);
+    var bufferSize = 4096;
+    _meetingScriptNode = _meetingAudioCtx.createScriptProcessor(bufferSize, 1, 1);
+    _meetingScriptNode.onaudioprocess = function(e) {
+      if (meetingState !== 'recording') return;
+      var input = e.inputBuffer.getChannelData(0);
+      var deviceRate = _meetingAudioCtx.sampleRate;
+      var ratio = deviceRate / 16000;
+      var outLen = Math.floor(input.length / ratio);
+      if (outLen === 0) return;
+      var pcm16 = new Int16Array(outLen);
+      for (var i = 0; i < outLen; i++) {
+        var idx = Math.floor(i * ratio);
+        var nextIdx = Math.min(idx + 1, input.length - 1);
+        var frac = i * ratio - idx;
+        var sample = input[idx] * (1 - frac) + input[nextIdx] * frac;
+        sample = Math.max(-1, Math.min(1, sample));
+        pcm16[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+      }
+      ipcRenderer.send('pet-voice-chunk', pcm16.buffer.slice(0));
+    };
+    _meetingSource.connect(_meetingScriptNode);
+    _meetingScriptNode.connect(_meetingAudioCtx.destination);
+    _dbg('Meeting audio started, rate=' + _meetingAudioCtx.sampleRate);
+    return true;
+  } catch (err) {
+    _dbg('Meeting audio error: ' + err.message);
+    _stopMeetingAudio();
+    return false;
+  }
+}
+
+function _stopMeetingAudio() {
+  try {
+    if (_meetingScriptNode) { _meetingScriptNode.disconnect(); _meetingScriptNode = null; }
+    if (_meetingSource) { _meetingSource.disconnect(); _meetingSource = null; }
+    if (_meetingStream) { _meetingStream.getTracks().forEach(function(t) { t.stop(); }); _meetingStream = null; }
+    if (_meetingAudioCtx) { _meetingAudioCtx.close().catch(function(){}); _meetingAudioCtx = null; }
+  } catch(e) { _dbg('Meeting audio cleanup error: ' + e.message); }
+}
+
+// 接收实时转写
+ipcRenderer.on('pet-meeting-transcript', function(_, text) {
+  if (!text) return;
+  var now = new Date();
+  var timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  var data = { text: text, time: timeStr };
+  meetingTranscript.push(data);
+
+  // 在转写预览区显示
+  var scroll = document.getElementById('transcriptScroll');
+  if (scroll) {
+    var item = document.createElement('div');
+    item.className = 'transcript-line';
+    item.innerHTML = '<span class="tl-time">' + data.time + '</span>' +
+      '<span class="tl-text">' + data.text.replace(/</g,'&lt;') + '</span>';
+    scroll.appendChild(item);
+    scroll.scrollTop = scroll.scrollHeight;
+  }
+  _dbg('Meeting transcript: ' + text.slice(0, 50));
+});
+
+
+</script>
