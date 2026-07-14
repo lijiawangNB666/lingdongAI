@@ -422,7 +422,13 @@ Thanks to all contributors and users. LingDong AI's vision is to become everyone
 ---
 
 > **灵动 AI / LingDong AI**
->
+># 灵动AI lingdongAI
+开源协议：MIT License
+## 使用规则
+1. 个人、非盈利学习场景可免费克隆、修改、本地运行；
+2. 禁止未经作者授权：二次打包分发售卖、企业私有化付费部署、基于本项目开发盈利类产品；
+3. 任何商业使用、定制开发、源码买断、企业授权，请通过Issues私信作者洽谈商用授权；
+4. 私自商用盈利，作者保留全部著作权维权权利。
 > **不只是聊天，更是执行。**
 >
 > **Not just chat, but execution.**
